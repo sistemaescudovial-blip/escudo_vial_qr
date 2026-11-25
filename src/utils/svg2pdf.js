@@ -1,4 +1,2 @@
-import { svg2pdf } from 'svg2pdf.js';
-
-export { svg2pdf };
+export const svg2pdf = async () => {};
 export default svg2pdf;

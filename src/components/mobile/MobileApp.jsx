@@ -5,7 +5,7 @@ import MobileHeader from './MobileHeader';
 import SosHero from './SosHero';
 import ActionCards from './ActionCards';
 import BottomNav from './BottomNav';
-import { Truck, Radio, ChevronRight } from 'lucide-react';
+import { Truck, Radio, ChevronRight, MessageSquare } from 'lucide-react';
 
 import ModalActivarQr from './ModalActivarQr';
 import ModalReportar from './ModalReportar';

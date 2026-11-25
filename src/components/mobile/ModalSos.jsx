@@ -449,12 +449,6 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                 </button>
               </div>
             )}
-                      {chatMessagesCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-            )}
 
             {/* VISTA 1: ESTADO DEL AUXILIO (GRÚA EN CAMINO / RADAR) */}
             {activeTab === 'auxilio' ? (
@@ -556,7 +550,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                     <button
                       type="button"
                       onClick={() => setActiveTab('chat')}
-                      className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-2xl flex items-center justify-between shadow-sm active:scale-98 transition-all cursor-pointer"
+                      className="w-full mt-2 bg-[#4B2C84] hover:bg-[#3d236b] text-white p-3 rounded-2xl flex items-center justify-between shadow-sm active:scale-98 transition-all cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 text-left">
                         <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-teal-300">
@@ -593,14 +587,12 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                   /* ESPERANDO EN TORRE DE CONTROL (Radar) */
                   <>
                     <div className="relative flex items-center justify-center my-2">
-                      
-                      <div className="relative w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/25 border-2 border-white">
+                      <div className="relative w-16 h-16 rounded-2xl bg-[#4B2C84] text-white flex items-center justify-center shadow-lg shadow-[#4B2C84]/25 border-2 border-white">
                         <Radio className="w-8 h-8 text-white animate-spin" style={{ animationDuration: '4s' }} />
                       </div>
                     </div>
 
-                    <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-1 border border-blue-200">
-                      
+                    <div className="inline-flex items-center gap-1.5 bg-purple-50 text-[#4B2C84] text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-1 border border-purple-200">
                       <span>Transmisión en Vivo a Torre 24/7</span>
                     </div>
 
@@ -626,7 +618,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                     <button
                       type="button"
                       onClick={() => setActiveTab('chat')}
-                      className="w-full mt-2 bg-blue-600 text-white p-3 rounded-2xl flex items-center justify-between shadow-md active:scale-98 transition-all cursor-pointer"
+                      className="w-full mt-2 bg-[#4B2C84] hover:bg-[#3d236b] text-white p-3 rounded-2xl flex items-center justify-between shadow-md active:scale-98 transition-all cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 text-left">
                         <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-teal-300">

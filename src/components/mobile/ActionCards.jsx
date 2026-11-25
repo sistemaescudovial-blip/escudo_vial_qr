@@ -13,7 +13,7 @@ export default function ActionCards({
       {/* Tarjeta 1: Central Médica 24/7 */}
       <article className="bg-white rounded-2xl p-4 shadow-xs border border-slate-200/90 relative overflow-hidden transition-all hover:border-slate-300">
         <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 text-[#4B2C84] flex items-center justify-center shrink-0 border border-purple-100 shadow-2xs">
             <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: '"FILL" 1' }}>
               medical_services
             </span>
@@ -48,7 +48,7 @@ export default function ActionCards({
           type="button"
           id="openActivarQrBtn"
           onClick={onOpenQrModal}
-          className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold text-sm py-3.5 px-5 rounded-xl flex items-center justify-between shadow-xs transition-all cursor-pointer group"
+          className="w-full bg-[#4B2C84] hover:bg-[#3d236b] active:scale-[0.99] text-white font-semibold text-sm py-3.5 px-5 rounded-xl flex items-center justify-between shadow-xs transition-all cursor-pointer group"
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-white/20 text-white flex items-center justify-center">

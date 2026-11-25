@@ -1,7 +1,6 @@
 import QRCode from 'qrcode';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
-import { svg2pdf } from './svg2pdf.js';
 import rawTemplateSvg from '../assets/sticker_template.svg?raw';
 
 /**
@@ -381,20 +380,15 @@ export async function exportOfficialStickerPdf(sku, targetUrl, printConfig = {})
   });
   registerCutContourSpotColor(doc);
 
-  // Renderizado 100% vectorial sin marcas de corte en la gráfica (para aplicarlas con tinta directa)
-  const artworkSvg = generateOfficialStickerSvg(cleanSku, targetUrl, {
+  // Renderizado gráfico en alta definición (300 DPI) para imprenta
+  const canvas = document.createElement('canvas');
+  await renderOfficialStickerToCanvas(cleanSku, targetUrl, canvas, {
     ...printConfig,
     cutExternal: false,
-    cutInternal: false,
-    cmykMode: true
+    cutInternal: false
   });
-  const svgDoc = new DOMParser().parseFromString(artworkSvg, 'image/svg+xml');
-  await svg2pdf(svgDoc.documentElement, doc, {
-    x: 0,
-    y: 0,
-    width: widthMm,
-    height: heightMm
-  });
+  const imgData = canvas.toDataURL('image/png');
+  doc.addImage(imgData, 'PNG', 0, 0, widthMm, heightMm, undefined, 'FAST');
 
   // Trazos vectoriales de corte con tinta directa CutContour (solo si están activos)
   drawCutContoursToPdf(doc, 0, 0, widthMm, heightMm, printConfig);
@@ -431,19 +425,14 @@ async function buildOfficialStickerAsset(qr, index, getBaseUrl, printConfig = {}
     });
     registerCutContourSpotColor(doc);
 
-    const artworkSvg = generateOfficialStickerSvg(cleanSku, targetUrl, {
+    const canvas = document.createElement('canvas');
+    await renderOfficialStickerToCanvas(cleanSku, targetUrl, canvas, {
       ...printConfig,
       cutExternal: false,
-      cutInternal: false,
-      cmykMode: true
+      cutInternal: false
     });
-    const svgDoc = new DOMParser().parseFromString(artworkSvg, 'image/svg+xml');
-    await svg2pdf(svgDoc.documentElement, doc, {
-      x: 0,
-      y: 0,
-      width: widthMm,
-      height: heightMm
-    });
+    const imgData = canvas.toDataURL('image/png');
+    doc.addImage(imgData, 'PNG', 0, 0, widthMm, heightMm, undefined, 'FAST');
 
     drawCutContoursToPdf(doc, 0, 0, widthMm, heightMm, printConfig);
     return {
