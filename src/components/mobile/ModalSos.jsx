@@ -194,6 +194,11 @@ export default function ModalSos({ isOpen, onClose, initialMode = 'prompt' }) {
       console.error('Error al despachar alerta S.O.S:', err);
     } finally {
       setIsSending(false);
+      // Salir de esta pantalla y volver al inicio para ver el botón en Azul Eléctrico y los confetis
+      setTimeout(() => {
+        setIsConfirmed(false);
+        onClose();
+      }, 400);
     }
   };
 
