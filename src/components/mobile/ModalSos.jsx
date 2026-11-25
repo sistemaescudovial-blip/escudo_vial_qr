@@ -310,6 +310,15 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
       <div 
         className="bg-white rounded-2xl p-4 sm:p-5 w-full max-w-sm sm:max-w-md flex flex-col items-center shadow-2xl relative border border-slate-200 max-h-[92vh] overflow-hidden animate-in zoom-in-95 duration-200"
       >
+        {/* Botón Cerrar X Superior */}
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+          title="Cerrar ventana"
+        >
+          <X className="w-4 h-4" />
+        </button>
         {!showTrackingView ? (
           /* ======================================================== */
           /* PASO DIRECTO: SELECCIÓN DE QUIÉN REPORTA (TITULAR DEFAULT) */
@@ -419,48 +428,9 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
           </div>
         ) : (
           /* ======================================================== */
-          /* PANTALLA EN VIVO: MODAL CON PESTAÑAS (AUXILIO | CHAT 24/7) */
+          /* PANTALLA EN VIVO: VISTA ÚNICA DE SEGUIMIENTO O CHAT */
           /* ======================================================== */
           <div className="w-full flex flex-col items-center h-full max-h-[85vh]">
-            
-            {/* Pestañas Superiores de Navegación Rápida */}
-            {liveEmergency?.status !== 'resuelto' && (
-              <div className="w-full bg-slate-100 p-1 rounded-2xl flex items-center mb-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('auxilio')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    activeTab === 'auxilio'
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <Truck className="w-4 h-4 text-[#4B2C84]" />
-                  <span>Estado del Auxilio</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('chat')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer relative ${
-                    activeTab === 'chat'
-                      ? 'bg-[#4B2C84] text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <MessageSquare className="w-4 h-4 text-teal-300" />
-                  <span>Chat con Central</span>
-                  {chatMessagesCount > 0 && (
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      activeTab === 'chat' ? 'bg-emerald-500 text-white' : 'bg-[#4B2C84] text-white'
-                    }`}>
-                      {chatMessagesCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-            )}
-
             {/* VISTA 1: ESTADO DEL AUXILIO (GRÚA EN CAMINO / RADAR) */}
             {activeTab === 'auxilio' ? (
               <div className="w-full flex flex-col items-center overflow-y-auto pr-0.5 text-center">
@@ -598,23 +568,26 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                   </>
                 )}
 
-                {/* Botón de Llamada Telefónica Directa */}
-                <a
-                  href="tel:02129010911"
-                  className="w-full mt-3 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-[12px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all"
-                >
-                  <Phone className="w-4 h-4 text-emerald-400" />
-                  <span>Llamar Central Directo (0212-9010911)</span>
-                </a>
+                {/* Botones adicionales solo si aún no está la grúa en camino */}
+                {liveEmergency?.status !== 'en_camino' && (
+                  <>
+                    <a
+                      href="tel:02129010911"
+                      className="w-full mt-3 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-[12px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all"
+                    >
+                      <Phone className="w-4 h-4 text-emerald-400" />
+                      <span>Llamar Central Directo (0212-9010911)</span>
+                    </a>
 
-                {/* Botón Cerrar */}
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="w-full mt-2 bg-[#00A896] hover:bg-[#008677] text-white py-3 rounded-xl font-bold text-[12.5px] uppercase tracking-wider shadow-sm cursor-pointer active:scale-95 transition-all"
-                >
-                  {liveEmergency?.status === 'en_camino' ? 'ENTENDIDO / VER EN RUTA' : 'MANTENER EN ESPERA'}
-                </button>
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      className="w-full mt-2 bg-[#00A896] hover:bg-[#008677] text-white py-3 rounded-xl font-bold text-[12.5px] uppercase tracking-wider shadow-sm cursor-pointer active:scale-95 transition-all"
+                    >
+                      MANTENER EN ESPERA
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               /* VISTA 2: PANTALLA COMPLETA DE CHAT PROFESIONAL CON FOTOS Y NOTAS DE VOZ */
