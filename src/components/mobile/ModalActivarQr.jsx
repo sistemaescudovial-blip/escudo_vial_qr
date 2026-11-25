@@ -72,13 +72,13 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div 
-        className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col shadow-2xl relative border border-teal-100 max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-2xl p-5 w-full max-w-sm flex flex-col shadow-2xl relative border border-slate-200 max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200"
       >
         {/* Botón Cerrar X */}
         <button
@@ -95,18 +95,18 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
           <div className="flex flex-col w-full">
             {/* Cabecera del Modal Activa tu QR */}
             <div className="flex items-start gap-3.5 pr-6">
-              <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#00A896] flex items-center justify-center shrink-0 shadow-sm border border-teal-100">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-sm border border-slate-200">
                 <span className="material-symbols-outlined text-[28px]">qr_code_scanner</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1 flex-wrap">
                   <h3 className="text-slate-900 font-extrabold text-[17px] leading-tight">Activa tu QR</h3>
-                  <span className="bg-teal-100 text-[#00A896] font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                  <span className="bg-blue-50 text-blue-600 font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                     REGISTRO ÚNICO
                   </span>
                 </div>
                 <p className="text-slate-500 text-[12px] font-semibold mt-0.5">
-                  SKU Detectado: <span className="font-mono text-[#532C8C] font-bold">{activeSku}</span>
+                  SKU Detectado: <span className="text-blue-600 font-bold">{activeSku}</span>
                 </p>
               </div>
             </div>
@@ -120,7 +120,7 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3 mt-3.5">
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5" htmlFor="qrNombreInput">
-                  <span className="material-symbols-outlined text-[15px] text-[#00A896]">person</span>
+                  <span className="material-symbols-outlined text-[15px] text-blue-600">person</span>
                   <span>NOMBRE Y APELLIDO</span>
                 </label>
                 <input
@@ -130,13 +130,13 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Ej. Carlos Mendoza"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 text-[13px] font-semibold placeholder:text-slate-400 focus:outline-none focus:border-[#00A896] focus:ring-1 focus:ring-[#00A896] transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 text-[13px] font-semibold placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-100 transition-all"
                 />
               </div>
 
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5" htmlFor="qrCedulaInput">
-                  <span className="material-symbols-outlined text-[15px] text-[#00A896]">badge</span>
+                  <span className="material-symbols-outlined text-[15px] text-blue-600">badge</span>
                   <span>NÚMERO DE CÉDULA</span>
                 </label>
                 <input
@@ -146,13 +146,13 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
                   value={cedula}
                   onChange={(e) => setCedula(e.target.value)}
                   placeholder="Ej. V-12.345.678"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 text-[13px] font-semibold placeholder:text-slate-400 focus:outline-none focus:border-[#00A896] focus:ring-1 focus:ring-[#00A896] transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 text-[13px] font-semibold placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-100 transition-all"
                 />
               </div>
 
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5" htmlFor="qrTelefonoInput">
-                  <span className="material-symbols-outlined text-[15px] text-[#00A896]">call</span>
+                  <span className="material-symbols-outlined text-[15px] text-blue-600">call</span>
                   <span>NÚMERO DE TELÉFONO</span>
                 </label>
                 <input
@@ -162,14 +162,14 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
                   value={telefono}
                   onChange={(e) => setTelefono(e.target.value)}
                   placeholder="Ej. 0412 123 4567"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 text-[13px] font-semibold placeholder:text-slate-400 focus:outline-none focus:border-[#00A896] focus:ring-1 focus:ring-[#00A896] transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 text-[13px] font-semibold placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-100 transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-left">
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px] text-[#00A896]">directions_car</span>
+                    <span className="material-symbols-outlined text-[14px] text-blue-600">directions_car</span>
                     <span>Vehículo</span>
                   </label>
                   <input
@@ -177,12 +177,12 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
                     value={vehiculo}
                     onChange={(e) => setVehiculo(e.target.value)}
                     placeholder="Marca y Modelo"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-900 text-[12px] font-medium focus:outline-none focus:border-[#00A896]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-900 text-[12px] font-medium focus:outline-none focus:border-blue-600"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px] text-[#00A896]">pin</span>
+                    <span className="material-symbols-outlined text-[14px] text-blue-600">pin</span>
                     <span>Placa</span>
                   </label>
                   <input
@@ -190,7 +190,7 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
                     value={placa}
                     onChange={(e) => setPlaca(e.target.value)}
                     placeholder="Ej. AA123BB"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-900 text-[12px] font-medium focus:outline-none focus:border-[#00A896]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-900 text-[12px] font-medium focus:outline-none focus:border-blue-600"
                   />
                 </div>
               </div>
@@ -205,7 +205,7 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
                   <select
                     value={bloodType}
                     onChange={(e) => setBloodType(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-900 text-[12px] font-medium focus:outline-none focus:border-[#00A896]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-900 text-[12px] font-medium focus:outline-none focus:border-blue-600"
                   >
                     <option value="O+">O Positivo (O+)</option>
                     <option value="A+">A Positivo (A+)</option>
@@ -217,7 +217,7 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px] text-[#00A896]">contact_emergency</span>
+                    <span className="material-symbols-outlined text-[14px] text-blue-600">contact_emergency</span>
                     <span>Contacto Familiar</span>
                   </label>
                   <input
@@ -225,7 +225,7 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
                     value={emergencyContact}
                     onChange={(e) => setEmergencyContact(e.target.value)}
                     placeholder="Ej. Valeria (Esposa)"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-900 text-[12px] font-medium focus:outline-none focus:border-[#00A896]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-900 text-[12px] font-medium focus:outline-none focus:border-blue-600"
                   />
                 </div>
               </div>
@@ -234,7 +234,7 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-2 w-full bg-[#00A896] hover:bg-[#008677] active:scale-[0.98] text-white font-extrabold text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 uppercase tracking-wider shadow-md transition-all cursor-pointer disabled:opacity-80 disabled:cursor-not-allowed"
+                className="mt-2 w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-extrabold text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 uppercase tracking-wider shadow-md transition-all cursor-pointer disabled:opacity-80 disabled:cursor-not-allowed"
               >
                 <span className={`material-symbols-outlined text-[19px] ${loading ? 'animate-spin' : ''}`}>
                   {loading ? 'sync' : 'verified_user'}
@@ -262,14 +262,14 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
           /* VISTA 2: Confirmación y Éxito de Activación */
           <div className="flex flex-col items-center text-center w-full py-2">
             <div className="relative flex items-center justify-center w-20 h-20 mb-3">
-              <div className="absolute inset-0 rounded-full bg-teal-100 animate-ping opacity-60" />
+              
               <div className="relative w-20 h-20 rounded-full bg-gradient-to-tr from-[#00A896] to-emerald-400 text-white flex items-center justify-center shadow-lg shadow-teal-500/30 animate-success-pop">
                 <span className="material-symbols-outlined text-[44px] font-bold">check</span>
               </div>
             </div>
 
-            <span className="bg-teal-50 text-[#00A896] border border-teal-200 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00A896] animate-pulse" />
+            <span className="bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-flex items-center gap-1">
+              
               PROTECCIÓN ACTIVA
             </span>
 
@@ -280,7 +280,7 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 mt-3 w-full text-left space-y-2">
               <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">SKU Vinculado</span>
-                <span className="text-[12px] font-extrabold font-mono text-[#532C8C] bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                <span className="text-[12px] font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
                   {activeSku}
                 </span>
               </div>
@@ -311,7 +311,7 @@ export default function ModalActivarQr({ isOpen, onClose, targetSku: propSku }) 
             <button
               type="button"
               onClick={onClose}
-              className="mt-4 w-full bg-[#00A896] hover:bg-[#008677] active:scale-[0.98] text-white font-extrabold text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 uppercase tracking-wider shadow-md transition-all cursor-pointer"
+              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-extrabold text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 uppercase tracking-wider shadow-md transition-all cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px]">done_all</span>
               <span>ENTENDIDO</span>

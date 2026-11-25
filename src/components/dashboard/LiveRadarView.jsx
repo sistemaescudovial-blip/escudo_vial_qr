@@ -1,32 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import TacticalLeafletMap from './TacticalLeafletMap';
+import escudoLogo from '../../assets/escudo-vial-logo.svg';
 import { 
   AlertCircle, 
   Phone, 
   MessageSquare, 
   MapPin, 
-  Truck, 
   CheckCircle, 
   Clock, 
-  Shield, 
-  User, 
-  Plus, 
   Navigation, 
-  ExternalLink,
-  Car,
-  Trash2,
-  Archive,
-  RotateCcw,
-  Send,
-  X,
-  Download,
-  ZoomIn,
-  Radio,
-  FileText,
-  Sparkles,
-  Inbox,
-  ChevronRight
+  ExternalLink, 
+  Car, 
+  Trash2, 
+  Send, 
+  X, 
+  Download, 
+  ZoomIn, 
+  Radio, 
+  FileText, 
+  Sparkles, 
+  Inbox, 
+  ChevronRight 
 } from 'lucide-react';
 
 export default function LiveRadarView({ 
@@ -37,7 +32,6 @@ export default function LiveRadarView({
   const { 
     emergencies, 
     updateEmergencyStatus, 
-    addEmergencyNote,
     sendEmergencyChatMessage,
     deleteEmergency,
     clearResolvedEmergencies
@@ -45,7 +39,7 @@ export default function LiveRadarView({
   
   const [radarFilter, setRadarFilter] = useState('activas'); // 'activas' | 'todas'
   const [localSelectedId, setLocalSelectedId] = useState(emergencies[0]?.id || null);
-  const [rightColTab, setRightColTab] = useState('chat'); // 'chat' | 'ficha'
+  const [rightColTab, setRightColTab] = useState('chat'); // 'chat' | 'inbox' | 'ficha'
   const [lastReadCounts, setLastReadCounts] = useState({});
   const [newNoteText, setNewNoteText] = useState('');
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
@@ -142,26 +136,26 @@ export default function LiveRadarView({
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4">
       {/* Columna Izquierda: Mapa de Radar y Rutas (7 Columnas en Desktop) */}
       <div className="lg:col-span-7 flex flex-col gap-4">
-        <div className="bg-slate-900 rounded-3xl p-5 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs relative overflow-hidden flex flex-col">
           {/* Cabecera del Mapa */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800 z-10 flex-wrap gap-2">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 z-10 flex-wrap gap-2">
             <div className="flex items-center gap-2.5">
-              <span className={`w-2.5 h-2.5 rounded-full ${activeEmergencies.length > 0 ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'}`}></span>
-              <h3 className="text-white font-extrabold text-sm tracking-wide flex items-center gap-2">
-                RADAR TÁCTICO VIAL EN TIEMPO REAL
+              
+              <h3 className="text-slate-900 font-bold text-sm tracking-tight flex items-center gap-2">
+                RADAR VIAL EN TIEMPO REAL
               </h3>
             </div>
 
             {/* Toggle de Alertas & Botón para Limpiar Resueltos */}
             <div className="flex items-center gap-2">
-              <div className="bg-slate-950/90 p-0.5 rounded-xl border border-slate-700/80 flex items-center text-[11px]">
+              <div className="bg-slate-100 p-1 rounded-xl border border-slate-200/80 flex items-center text-xs">
                 <button
                   type="button"
                   onClick={() => setRadarFilter('activas')}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
                     radarFilter === 'activas' 
-                      ? 'bg-rose-600 text-white shadow-xs' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white text-blue-600 shadow-xs' 
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Activas ({activeEmergencies.length})
@@ -169,10 +163,10 @@ export default function LiveRadarView({
                 <button
                   type="button"
                   onClick={() => setRadarFilter('todas')}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
                     radarFilter === 'todas' 
-                      ? 'bg-purple-600 text-white shadow-xs' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white text-blue-600 shadow-xs' 
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Todas ({emergencies.length})
@@ -183,18 +177,18 @@ export default function LiveRadarView({
                 <button
                   type="button"
                   onClick={clearResolvedEmergencies}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                  className="bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-200 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
                   title="Retirar del mapa todos los casos que ya fueron atendidos/resueltos"
                 >
-                  <Trash2 className="w-3 h-3 text-rose-400" />
+                  <Trash2 className="w-3.5 h-3.5 text-slate-400" />
                   <span>Limpiar Resueltos ({resolvedEmergencies.length})</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Mapa Táctico Interactivo con Calles Reales (OpenStreetMap / CartoDB / Satélite) */}
-          <div className="my-3">
+          {/* Mapa Interactivo con Calles Reales */}
+          <div className="my-3 rounded-xl overflow-hidden border border-slate-200">
             <TacticalLeafletMap 
               emergencies={displayedEmergencies}
               selectedEmergency={selectedEmergency}
@@ -205,7 +199,7 @@ export default function LiveRadarView({
           {/* Selector Rápido de Emergencias en el Mapa */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
             {displayedEmergencies.length === 0 ? (
-              <div className="text-[11px] text-slate-500 py-1.5 px-3 italic bg-slate-950/40 rounded-xl border border-slate-800">
+              <div className="text-xs text-slate-500 py-2 px-3 italic bg-slate-50 rounded-xl border border-slate-200">
                 {radarFilter === 'activas' ? 'No hay casos activos pendientes' : 'Sin alertas registradas'}
               </div>
             ) : (
@@ -217,21 +211,21 @@ export default function LiveRadarView({
                     onClick={() => setSelectedEmergencyId(emg.id)}
                     className={`px-3 py-2 rounded-xl text-left transition-all shrink-0 border cursor-pointer ${
                       isSelected 
-                        ? 'bg-rose-600/20 border-rose-500 text-white shadow-sm shadow-rose-900/40' 
-                        : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200'
+                        ? 'bg-blue-50/70 border-blue-500 text-blue-900 ring-1 ring-blue-500 shadow-xs' 
+                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs font-bold text-white">
+                      <span className="text-xs font-bold text-slate-900">
                         {emg.folio}
                       </span>
-                      <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded ${
-                        emg.status === 'critico' ? 'bg-rose-500 text-white' : emg.status === 'en_camino' ? 'bg-teal-500 text-white' : 'bg-slate-700 text-slate-300'
+                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded ${
+                        emg.status === 'critico' ? 'bg-rose-100 text-rose-700' : emg.status === 'en_camino' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
                       }`}>
                         {emg.status}
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-300 truncate max-w-[150px] mt-0.5">
+                    <div className="text-[11px] text-slate-500 truncate max-w-[140px] mt-0.5 font-medium">
                       {emg.holderName}
                     </div>
                   </button>
@@ -242,31 +236,31 @@ export default function LiveRadarView({
         </div>
       </div>
 
-      {/* Columna Derecha: Tarjeta de Despacho Operativo & Consola Táctica (5 Columnas en Desktop) */}
+      {/* Columna Derecha: Tarjeta de Despacho Operativo & Chat (5 Columnas en Desktop) */}
       <div className="lg:col-span-5 flex flex-col gap-4">
         {selectedEmergency ? (
-          <div className={`bg-white rounded-3xl p-5 border transition-all duration-300 shadow-xl flex flex-col gap-3.5 animate-in fade-in ${
-            showGlowAlert ? 'border-emerald-500 ring-4 ring-emerald-500/20 shadow-emerald-500/20' : 'border-slate-200'
+          <div className={`bg-white rounded-2xl p-5 border transition-all duration-200 shadow-xs flex flex-col gap-3.5 ${
+            showGlowAlert ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-slate-200/90'
           }`}>
             {/* Header del Caso */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-extrabold text-base text-slate-900">
+                  <span className="font-bold text-base text-slate-900">
                     {selectedEmergency.folio}
                   </span>
-                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                    selectedEmergency.status === 'critico'
-                      ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                      : selectedEmergency.status === 'en_camino'
-                        ? 'bg-teal-100 text-teal-800 border border-teal-200'
-                        : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {selectedEmergency.status === 'critico' ? 'ALERTA CRÍTICA' : selectedEmergency.status === 'en_camino' ? 'DESPACHO ACTIVO' : 'CASO RESUELTO'}
-                  </span>
+                  {selectedEmergency.status === 'critico' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
+                      ALERTA CRÍTICA
+                    </span>
+                  )}
+                  {selectedEmergency.status === 'resuelto' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-slate-100 text-slate-600">
+                      CASO RESUELTO
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-slate-500 mt-1 flex items-center gap-1 font-medium">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <p className="text-xs text-slate-500 mt-1 font-medium">
                   Reportado: {new Date(selectedEmergency.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -274,34 +268,29 @@ export default function LiveRadarView({
               {/* SKU Badge */}
               <div className="text-right">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sticker QR</span>
-                <span className="font-mono font-extrabold text-xs text-[#532C8C] bg-purple-50 px-2 py-1 rounded-lg border border-purple-100">
+                <span className="font-bold text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200">
                   {selectedEmergency.sku}
                 </span>
               </div>
             </div>
 
-            {/* Pestañas de Navegación del Panel: Chat Táctico vs Bandeja Multichat vs Ficha */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200">
+            {/* Pestañas de Navegación del Panel: Chat Activo vs Bandeja vs Ficha */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/80">
               <button
                 type="button"
                 onClick={() => setRightColTab('chat')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer relative ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer relative ${
                   rightColTab === 'chat'
-                    ? 'bg-slate-950 text-white shadow-md'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    ? 'bg-white text-blue-600 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Radio className={`w-3.5 h-3.5 ${rightColTab === 'chat' ? 'text-emerald-400' : 'text-slate-500'}`} />
+                <Radio className={`w-3.5 h-3.5 ${rightColTab === 'chat' ? 'text-blue-600' : 'text-slate-400'}`} />
                 <span className="truncate">CHAT ACTIVO</span>
-                {showGlowAlert && (
-                  <span className="flex h-2 w-2 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                )}
+                
                 {selectedEmergency.notes?.length > 0 && (
-                  <span className={`text-[9.5px] px-1.5 py-0.2 rounded font-mono ${
-                    rightColTab === 'chat' ? 'bg-slate-800 text-emerald-400' : 'bg-slate-200 text-slate-700'
+                  <span className={`text-[9.5px] px-1.5 py-0.2 rounded ${
+                    rightColTab === 'chat' ? 'bg-blue-50 text-blue-700' : 'bg-slate-200 text-slate-700'
                   }`}>
                     {selectedEmergency.notes.length}
                   </span>
@@ -311,29 +300,24 @@ export default function LiveRadarView({
               <button
                 type="button"
                 onClick={() => setRightColTab('inbox')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer relative ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer relative ${
                   rightColTab === 'inbox'
-                    ? 'bg-teal-700 text-white shadow-md'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    ? 'bg-white text-blue-600 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Inbox className="w-3.5 h-3.5" />
                 <span className="truncate">BANDEJA ({displayedEmergencies.length})</span>
-                {totalUnreadConversations > 0 && (
-                  <span className="flex h-2 w-2 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                  </span>
-                )}
+                
               </button>
 
               <button
                 type="button"
                 onClick={() => setRightColTab('ficha')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   rightColTab === 'ficha'
-                    ? 'bg-[#532C8C] text-white shadow-md'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    ? 'bg-white text-blue-600 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -341,13 +325,13 @@ export default function LiveRadarView({
               </button>
             </div>
 
-            {/* Acciones Rápidas de Contacto Telefónico y WhatsApp (Siempre visibles) */}
+            {/* Acciones Rápidas de Contacto */}
             <div className="grid grid-cols-2 gap-2">
               <a
                 href={`tel:${selectedEmergency.phone}`}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm shadow-emerald-700/20"
+                className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs"
               >
-                <Phone className="w-3.5 h-3.5" />
+                <Phone className="w-3.5 h-3.5 text-slate-400" />
                 <span>Llamar al Usuario</span>
               </a>
 
@@ -355,9 +339,9 @@ export default function LiveRadarView({
                 href={`https://wa.me/${selectedEmergency.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${selectedEmergency.holderName}, nos comunicamos desde la Central de Monitoreo de Escudo Vial con respecto a tu alerta ${selectedEmergency.folio}.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-[#00A896] hover:bg-[#008677] text-white font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm shadow-teal-700/20"
+                className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs"
               >
-                <MessageSquare className="w-3.5 h-3.5" />
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
                 <span>WhatsApp Directo</span>
               </a>
             </div>
@@ -368,23 +352,23 @@ export default function LiveRadarView({
                 <button
                   type="button"
                   onClick={() => handleDispatch('Unidad de Auxilio Vial')}
-                  className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:brightness-110 active:scale-[0.98] text-white font-black text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/30 cursor-pointer uppercase tracking-wider"
+                  className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer uppercase tracking-wider"
                 >
                   <CheckCircle className="w-4 h-4 text-white" />
                   <span>ACEPTAR Y ATENDER EMERGENCIA</span>
                 </button>
               ) : selectedEmergency.status === 'en_camino' ? (
-                <div className="bg-teal-50 border border-teal-200 rounded-xl p-2.5 flex items-center justify-between text-xs text-teal-900 font-extrabold">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 flex items-center justify-between text-xs text-blue-900 font-semibold">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-ping"></span>
+                    
                     <span>¡EMERGENCIA ACEPTADA Y EN ATENCIÓN!</span>
                   </div>
-                  <span className="bg-teal-200/80 text-teal-800 text-[10px] px-2 py-0.5 rounded-md uppercase font-bold">
+                  <span className="bg-blue-200/70 text-blue-800 text-[10px] px-2 py-0.5 rounded-md uppercase font-bold">
                     En Curso
                   </span>
                 </div>
               ) : (
-                <div className="bg-slate-100 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between text-xs text-slate-700 font-bold">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between text-xs text-slate-700 font-semibold">
                   <span>Asistencia solventada y cerrada</span>
                   <span className="bg-slate-200 text-slate-700 text-[10px] px-2 py-0.5 rounded-md uppercase">
                     Resuelto
@@ -393,26 +377,25 @@ export default function LiveRadarView({
               )}
             </div>
 
-            {/* Contenido según la pestaña activa: Chat Táctico, Bandeja Multichat o Ficha Técnica */}
+            {/* Contenido según pestaña activa */}
             {rightColTab === 'inbox' ? (
-              /* Bandeja Multichat: Lista de todas las conversaciones activas */
-              <div className="bg-slate-900 rounded-2xl p-3.5 border border-slate-800 flex flex-col gap-3 shadow-xl animate-in fade-in">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              /* Bandeja Multichat */
+              <div className="bg-white rounded-xl p-3.5 border border-slate-200 flex flex-col gap-3 shadow-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <Inbox className="w-4 h-4 text-teal-400" />
-                    <span className="font-extrabold text-xs text-white uppercase tracking-wider">
+                    <Inbox className="w-4 h-4 text-blue-600" />
+                    <span className="font-bold text-xs text-slate-800 uppercase tracking-wider">
                       Centro de Conversaciones en Vivo
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-teal-300 bg-teal-950/80 border border-teal-800 px-2 py-0.5 rounded-full font-mono">
+                  <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full ">
                     {displayedEmergencies.length} {displayedEmergencies.length === 1 ? 'caso' : 'casos'}
                   </span>
                 </div>
 
-                {/* Lista de Chats con vista previa */}
-                <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
                   {displayedEmergencies.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500 text-xs italic">
+                    <div className="text-center py-10 text-slate-400 text-xs italic">
                       No hay emergencias registradas en este momento.
                     </div>
                   ) : (
@@ -425,8 +408,8 @@ export default function LiveRadarView({
 
                       let previewText = "Sin mensajes aún";
                       if (lastMessage) {
-                        if (lastMessage.imageUrl) previewText = "📷 [Foto de la emergencia adjuntada]";
-                        else if (lastMessage.audioUrl) previewText = "🎤 [Nota de voz enviada]";
+                        if (lastMessage.imageUrl) previewText = "[Foto de la emergencia]";
+                        else if (lastMessage.audioUrl) previewText = "[Nota de voz]";
                         else previewText = lastMessage.text || "Mensaje enviado";
                       }
 
@@ -437,60 +420,58 @@ export default function LiveRadarView({
                             setSelectedEmergencyId(emg.id);
                             setRightColTab('chat');
                           }}
-                          className={`p-3 rounded-2xl border transition-all cursor-pointer text-left relative ${
+                          className={`p-3 rounded-xl border transition-all cursor-pointer text-left relative ${
                             isSelected
-                              ? 'bg-slate-950 text-white border-emerald-500/80 shadow-lg ring-2 ring-emerald-400/40'
-                              : 'bg-slate-950/60 hover:bg-slate-950 text-slate-300 border-slate-800'
+                              ? 'bg-blue-50/60 text-slate-900 border-blue-500 ring-1 ring-blue-500'
+                              : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className={`font-extrabold text-xs ${isSelected ? 'text-white' : 'text-slate-200'}`}>
+                                <span className="font-bold text-xs text-slate-900">
                                   {emg.holderName}
                                 </span>
-                                <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-purple-950/80 text-purple-300 border border-purple-800/60">
+                                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
                                   {emg.folio}
                                 </span>
-                                <span className={`text-[9px] font-black uppercase px-1.5 py-0.2 rounded ${
+                                <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded ${
                                   emg.status === 'critico'
-                                    ? 'bg-rose-500 text-white'
+                                    ? 'bg-rose-100 text-rose-700'
                                     : emg.status === 'en_camino'
-                                      ? 'bg-teal-500 text-white'
-                                      : 'bg-slate-700 text-slate-300'
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : 'bg-slate-100 text-slate-600'
                                 }`}>
                                   {emg.status === 'critico' ? 'Crítico' : emg.status === 'en_camino' ? 'En Curso' : 'Resuelto'}
                                 </span>
                               </div>
 
-                              <div className="text-[11px] truncate mt-0.5 text-slate-400">
-                                🚗 {emg.vehicle || 'Vehículo en vía'} • 📞 {emg.phone}
+                              <div className="text-[11px] truncate mt-0.5 text-slate-500">
+                                {emg.vehicle || 'Vehículo en vía'} • {emg.phone}
                               </div>
 
-                              {/* Vista previa del último mensaje */}
                               <div className={`text-xs mt-1.5 truncate flex items-center gap-1.5 ${
                                 hasUnreadThis
-                                  ? 'text-emerald-400 font-black'
-                                  : 'text-slate-400 font-medium'
+                                  ? 'text-emerald-600 font-bold'
+                                  : 'text-slate-400 font-normal'
                               }`}>
                                 <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-70" />
                                 <span className="truncate">{previewText}</span>
                               </div>
                             </div>
 
-                            {/* Lado derecho: Hora y Badges */}
                             <div className="flex flex-col items-end shrink-0 gap-1">
-                              <span className="text-[10px] font-mono text-slate-500">
+                              <span className="text-[10px] text-slate-400">
                                 {lastMessage?.time || new Date(emg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
 
                               {hasUnreadThis && (
-                                <span className="bg-emerald-500 text-white text-[9.5px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                                <span className="bg-emerald-500 text-white text-[9.5px] font-bold px-1.5 py-0.2 rounded-full">
                                   NUEVO
                                 </span>
                               )}
 
-                              <div className="mt-1 flex items-center gap-0.5 text-xs text-teal-400 font-bold hover:underline">
+                              <div className="mt-1 flex items-center gap-0.5 text-xs text-blue-600 font-semibold hover:underline">
                                 <span>Abrir</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
                               </div>
@@ -504,42 +485,42 @@ export default function LiveRadarView({
               </div>
             ) : rightColTab === 'ficha' ? (
               /* Ficha Completa del Afectado y Vehículo */
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-3 text-xs animate-in fade-in">
-                <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                  <span className="text-slate-500 font-bold uppercase text-[10px]">Titular Registrado</span>
-                  <span className="font-extrabold text-slate-900 text-sm">{selectedEmergency.holderName}</span>
+              <div className="bg-slate-50/70 rounded-xl p-4 border border-slate-200 space-y-3 text-xs animate-in fade-in">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <span className="text-slate-500 font-semibold uppercase text-[10px]">Titular Registrado</span>
+                  <span className="font-bold text-slate-900 text-sm">{selectedEmergency.holderName}</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 border-b border-slate-200/60 pb-2">
+                <div className="grid grid-cols-2 gap-2 border-b border-slate-200 pb-2">
                   <div>
-                    <span className="text-slate-400 font-bold uppercase text-[9.5px] block">Cédula</span>
+                    <span className="text-slate-400 font-semibold uppercase text-[9.5px] block">Cédula</span>
                     <span className="font-semibold text-slate-800">{selectedEmergency.cedula}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 font-bold uppercase text-[9.5px] block">Reportante</span>
-                    <span className={`font-bold capitalize ${
-                      selectedEmergency.reporterType === 'titular' ? 'text-teal-700' : 'text-purple-700'
+                    <span className="text-slate-400 font-semibold uppercase text-[9.5px] block">Reportante</span>
+                    <span className={`font-semibold capitalize ${
+                      selectedEmergency.reporterType === 'titular' ? 'text-emerald-700' : 'text-blue-700'
                     }`}>
-                      {selectedEmergency.reporterType === 'titular' ? '👤 Titular' : '👥 Tercero / Testigo'}
+                      {selectedEmergency.reporterType === 'titular' ? 'Titular' : 'Tercero / Testigo'}
                     </span>
                   </div>
                 </div>
 
-                <div className="border-b border-slate-200/60 pb-2">
-                  <span className="text-slate-400 font-bold uppercase text-[9.5px] block">Vehículo / Placa</span>
+                <div className="border-b border-slate-200 pb-2">
+                  <span className="text-slate-400 font-semibold uppercase text-[9.5px] block">Vehículo / Placa</span>
                   <div className="flex items-center gap-1.5 font-semibold text-slate-800 mt-0.5">
-                    <Car className="w-3.5 h-3.5 text-[#532C8C]" />
+                    <Car className="w-3.5 h-3.5 text-blue-600" />
                     <span>{selectedEmergency.vehicle || 'Vehículo en vía'}</span>
                   </div>
                 </div>
 
-                <div className="border-b border-slate-200/60 pb-2">
-                  <span className="text-slate-400 font-bold uppercase text-[9.5px] block">Teléfono de Contacto</span>
+                <div className="border-b border-slate-200 pb-2">
+                  <span className="text-slate-400 font-semibold uppercase text-[9.5px] block">Teléfono de Contacto</span>
                   <span className="font-semibold text-slate-800">{selectedEmergency.phone}</span>
                 </div>
 
                 <div>
-                  <span className="text-slate-400 font-bold uppercase text-[9.5px] block">Ubicación GPS</span>
+                  <span className="text-slate-400 font-semibold uppercase text-[9.5px] block">Ubicación GPS</span>
                   <div className="flex items-start gap-1 text-slate-700 font-medium mt-0.5">
                     <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
                     <span>{selectedEmergency.location.address}</span>
@@ -549,7 +530,7 @@ export default function LiveRadarView({
                       href={`https://www.google.com/maps?q=${selectedEmergency.location.lat},${selectedEmergency.location.lng}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] text-teal-700 hover:text-teal-800 font-bold mt-1.5"
+                      className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-700 font-semibold mt-1.5"
                     >
                       <Navigation className="w-3 h-3" />
                       <span>Abrir coordenadas en Google Maps</span>
@@ -559,22 +540,22 @@ export default function LiveRadarView({
                 </div>
               </div>
             ) : (
-              /* Consola Táctica de Chat Oscura (Dark Command HUD) */
-              <div className="bg-slate-950 rounded-2xl p-3.5 border border-slate-800 flex flex-col gap-2.5 shadow-2xl animate-in fade-in">
-                {/* Cabecera Táctica del Chat HUD */}
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+              /* Consola de Chat Táctico Estilo Helpdesk */
+              <div className="bg-slate-50/70 rounded-xl p-3.5 border border-slate-200/90 flex flex-col gap-2.5 shadow-xs animate-in fade-in">
+                {/* Cabecera del Chat */}
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                   <div className="flex items-center gap-2">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    <span className="relative flex h-2 w-2">
+                      
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
                     <div>
-                      <div className="text-[11px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                        <span>ENLACE RADIAL TÁCTICO 24/7</span>
+                      <div className="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>CANAL DE CHAT EN VIVO</span>
                       </div>
-                      <div className="text-[9.5px] text-slate-400 font-medium flex items-center gap-1">
+                      <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
                         <span>Conectado con:</span>
-                        <strong className="text-white">{selectedEmergency.holderName}</strong>
+                        <strong className="text-slate-800">{selectedEmergency.holderName}</strong>
                         <span>•</span>
                         <span>{selectedEmergency.vehicle || 'Vehículo'}</span>
                       </div>
@@ -584,31 +565,31 @@ export default function LiveRadarView({
                     <button
                       type="button"
                       onClick={() => setRightColTab('inbox')}
-                      className="text-[9.5px] font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                      className="text-[10px] font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-2 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-all shadow-xs"
                       title="Ver todos los chats en curso"
                     >
-                      <Inbox className="w-3 h-3 text-teal-400" />
+                      <Inbox className="w-3 h-3 text-blue-600" />
                       <span>Bandeja ({displayedEmergencies.length})</span>
                     </button>
-                    <span className="text-[9.5px] font-extrabold text-teal-300 bg-teal-950/80 px-2 py-0.5 rounded-md border border-teal-800 font-mono tracking-wider">
-                      EN VIVO
+                    <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      ONLINE
                     </span>
                   </div>
                 </div>
 
-                {/* Contenedor de Mensajes con Scroll Ampliado */}
+                {/* Contenedor de Mensajes */}
                 <div 
                   ref={chatScrollRef}
                   className="space-y-2.5 h-[340px] overflow-y-auto pr-1 text-xs select-text"
                 >
                   {(!selectedEmergency.notes || selectedEmergency.notes.length === 0) ? (
                     <div className="text-center py-10 flex flex-col items-center justify-center gap-2">
-                      <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-400">
-                        <Radio className="w-5 h-5 animate-pulse" />
+                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-blue-600 shadow-xs">
+                        <Radio className="w-5 h-5" />
                       </div>
-                      <p className="text-slate-400 text-xs font-semibold">Canal de Transmisión Activo</p>
-                      <p className="text-slate-500 text-[11px] max-w-xs leading-relaxed">
-                        El conductor puede enviar mensajes, fotos del vehículo y audios desde su teléfono. Escribe una respuesta o usa los botones rápidos abajo.
+                      <p className="text-slate-700 text-xs font-semibold">Canal de Transmisión Activo</p>
+                      <p className="text-slate-400 text-[11px] max-w-xs leading-relaxed">
+                        El conductor puede enviar mensajes, fotos del vehículo y notas de voz desde su teléfono móvil.
                       </p>
                     </div>
                   ) : (
@@ -619,7 +600,7 @@ export default function LiveRadarView({
                       if (!isUser && !isCentral) {
                         return (
                           <div key={msg.id || i} className="text-center my-1.5">
-                            <span className="bg-slate-900 border border-slate-800 text-slate-400 text-[9.5px] px-2.5 py-0.5 rounded-full inline-block font-mono">
+                            <span className="bg-slate-200/70 border border-slate-300 text-slate-600 text-[9.5px] px-2.5 py-0.5 rounded-full inline-block">
                               {msg.text}
                             </span>
                           </div>
@@ -631,18 +612,18 @@ export default function LiveRadarView({
                           key={msg.id || i} 
                           className={`flex flex-col ${isCentral ? 'items-end' : 'items-start'}`}
                         >
-                          <div className="text-[9.5px] text-slate-400 font-semibold mb-1 px-1 flex items-center gap-1.5 font-mono">
-                            <span className={isCentral ? 'text-purple-300 font-bold' : 'text-emerald-400 font-bold'}>
-                              {isCentral ? '🛡️ CENTRAL (TÚ)' : '📱 CONDUCTOR EN RUTA'}
+                          <div className="text-[9.5px] text-slate-400 font-medium mb-1 px-1 flex items-center gap-1.5">
+                            <span className={isCentral ? 'text-blue-600 font-semibold' : 'text-slate-600 font-semibold'}>
+                              {isCentral ? 'Central (Tú)' : 'Conductor en ruta'}
                             </span>
-                            <span className="text-slate-600">•</span>
+                            <span>•</span>
                             <span>{msg.time}</span>
                           </div>
                           <div 
-                            className={`px-3.5 py-2 rounded-2xl max-w-[88%] text-xs shadow-md leading-relaxed ${
+                            className={`px-3.5 py-2.5 rounded-2xl max-w-[85%] text-xs shadow-xs leading-relaxed ${
                               isCentral 
-                                ? 'bg-gradient-to-r from-[#532C8C] to-[#6b38b4] text-white border border-purple-400/40 rounded-tr-xs' 
-                                : 'bg-emerald-950/80 text-emerald-100 border border-emerald-500/50 rounded-tl-xs font-medium'
+                                ? 'bg-blue-600 text-white rounded-br-none' 
+                                : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-none font-normal'
                             }`}
                           >
                             {msg.text && <div className="break-words">{msg.text}</div>}
@@ -651,16 +632,16 @@ export default function LiveRadarView({
                                 <img 
                                   src={msg.imageUrl} 
                                   alt="Foto enviada" 
-                                  className="rounded-xl max-h-48 w-auto object-cover border border-emerald-500/40 shadow-md hover:brightness-110 transition-all" 
+                                  className="rounded-xl max-h-48 w-auto object-cover border border-slate-200 shadow-xs hover:brightness-105 transition-all" 
                                 />
-                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 rounded-xl flex items-center justify-center text-white transition-opacity backdrop-blur-2xs">
-                                  <ZoomIn className="w-6 h-6 drop-shadow-md text-emerald-300" />
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 rounded-xl flex items-center justify-center text-white transition-opacity">
+                                  <ZoomIn className="w-5 h-5 drop-shadow text-white" />
                                 </div>
                               </div>
                             )}
                             {msg.audioUrl && (
-                              <div className="mt-2 pt-1 border-t border-slate-700/50">
-                                <audio controls src={msg.audioUrl} className="h-8 max-w-[210px] filter invert brightness-90" />
+                              <div className="mt-2 pt-1 border-t border-slate-200">
+                                <audio controls src={msg.audioUrl} className="h-8 max-w-[210px]" />
                               </div>
                             )}
                           </div>
@@ -670,25 +651,24 @@ export default function LiveRadarView({
                   )}
                 </div>
 
-                {/* Botones de Respuestas Rápidas Tácticas para el Operador */}
-                <div className="pt-2 border-t border-slate-800/80">
-                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 flex items-center gap-1 font-mono">
-                    <Sparkles className="w-3 h-3 text-emerald-400" />
-                    <span>Despacho Rápido Táctico:</span>
+                {/* Botones de Respuestas Rápidas */}
+                <div className="pt-2 border-t border-slate-200">
+                  <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-1">
+                    Respuestas Rápidas:
                   </div>
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                     {[
-                      '🚙 Grúa en ruta hacia tu posición (8-10 min)',
-                      '⚠️ Enciende intermitentes y mantén la calma',
-                      '📞 Te estamos llamando a tu número celular',
-                      '🚨 Patrulla y paramédicos notificados',
-                      '📸 Envíanos una foto del daño para la aseguradora'
+                      'Grúa en ruta hacia tu posición (8-10 min)',
+                      'Enciende intermitentes y mantén la calma',
+                      'Te estamos llamando a tu número celular',
+                      'Patrulla y paramédicos notificados',
+                      'Envíanos una foto del daño para la aseguradora'
                     ].map((chip, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => handleSendChatMessage(chip)}
-                        className="bg-slate-900 hover:bg-emerald-950/80 border border-slate-800 hover:border-emerald-500/60 text-slate-300 hover:text-emerald-200 text-[10.5px] px-2.5 py-1 rounded-lg whitespace-nowrap font-medium transition-all shadow-xs active:scale-95 cursor-pointer shrink-0"
+                        className="bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-slate-600 hover:text-blue-700 text-[11px] px-2.5 py-1 rounded-lg whitespace-nowrap font-medium transition-all shadow-xs cursor-pointer shrink-0"
                       >
                         {chip}
                       </button>
@@ -696,20 +676,20 @@ export default function LiveRadarView({
                   </div>
                 </div>
 
-                {/* Input de redacción de mensaje */}
+                {/* Input de redacción */}
                 <form onSubmit={handleAddNote} className="flex items-center gap-1.5 mt-1">
                   <input
                     type="text"
                     value={newNoteText}
                     onChange={(e) => setNewNoteText(e.target.value)}
-                    placeholder="Escribir mensaje directo al teléfono del usuario..."
-                    className="flex-1 bg-slate-900 border border-slate-700 focus:border-emerald-400 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-400 shadow-inner"
+                    placeholder="Escribir mensaje al conductor..."
+                    className="flex-1 bg-white border border-slate-200 focus:border-blue-600 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-xs"
                   />
                   <button
                     type="submit"
                     disabled={!newNoteText.trim()}
-                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white px-3.5 py-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-emerald-900/40 active:scale-95 flex items-center gap-1 font-bold text-xs"
-                    title="Enviar mensaje al conductor"
+                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-3.5 py-2.5 rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1 font-semibold text-xs"
+                    title="Enviar mensaje"
                   >
                     <span>Enviar</span>
                     <Send className="w-3.5 h-3.5" />
@@ -718,13 +698,13 @@ export default function LiveRadarView({
               </div>
             )}
 
-            {/* Acciones de Cierre / Retiro del Caso */}
+            {/* Acciones de Cierre */}
             <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
               {selectedEmergency.status === 'en_camino' && (
                 <button
                   type="button"
                   onClick={handleResolve}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer uppercase tracking-wider"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer uppercase tracking-wider"
                 >
                   <CheckCircle className="w-4 h-4 text-emerald-400" />
                   <span>FINALIZAR Y MARCAR COMO RESUELTO</span>
@@ -732,7 +712,7 @@ export default function LiveRadarView({
               )}
 
               {selectedEmergency.status === 'resuelto' && (
-                <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-between">
+                <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold text-xs py-2 px-3 rounded-xl flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <CheckCircle className="w-4 h-4 text-emerald-600" />
                     <span>CASO ATENDIDO Y RESUELTO</span>
@@ -750,7 +730,7 @@ export default function LiveRadarView({
               <button
                 type="button"
                 onClick={() => handleDelete(selectedEmergency.id)}
-                className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="w-full bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 font-medium text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 title="Descartar o quitar caso del radar"
               >
                 <Trash2 className="w-4 h-4" />
@@ -759,57 +739,57 @@ export default function LiveRadarView({
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center flex flex-col items-center justify-center h-full min-h-[380px]">
-            <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#00A896] flex items-center justify-center mb-3 border border-teal-100 shadow-inner">
-              <Shield className="w-7 h-7" />
+          <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-xs text-center flex flex-col items-center justify-center h-full min-h-[380px]">
+            <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center mb-3 shadow-sm shadow-blue-500/20 p-2">
+              <img src={escudoLogo} alt="Escudo Vial" className="w-full h-full object-contain" />
             </div>
-            <h4 className="font-extrabold text-slate-900 text-base">
+            <h4 className="font-bold text-slate-900 text-base">
               Torre de Monitoreo Activa 24/7
             </h4>
             <p className="text-xs text-slate-500 max-w-xs mt-1.5 leading-relaxed">
               No hay emergencias en curso en este momento. La central está en escucha activa para recibir transmisiones S.O.S reales desde cualquier sticker QR escaneado.
             </p>
-            <div className="mt-4 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs text-slate-600 flex items-center gap-2 max-w-xs">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-              <span>Para registrar una alerta real, escanea o abre un QR en el móvil y presiona el botón S.O.S.</span>
+            <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-left text-xs text-slate-600 flex items-center gap-2 max-w-xs">
+              
+              <span>Para registrar una alerta real, escanea un QR o abre la vista móvil y presiona el botón S.O.S.</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Modal Lightbox Visor de Fotos en Alta Resolución */}
+      {/* Modal Lightbox Visor de Fotos */}
       {previewImageUrl && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setPreviewImageUrl(null)}
         >
           <div 
-            className="relative max-w-4xl max-h-[90vh] flex flex-col items-center"
+            className="relative max-w-4xl max-h-[90vh] flex flex-col items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setPreviewImageUrl(null)}
-              className="absolute -top-12 right-0 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-all cursor-pointer"
+              className="absolute -top-3 -right-3 bg-white text-slate-700 hover:text-slate-900 rounded-full p-1.5 shadow-md border border-slate-200 transition-all cursor-pointer"
               title="Cerrar visor"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
 
             <img 
               src={previewImageUrl} 
-              alt="Foto ampliada de la emergencia" 
-              className="max-h-[80vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl border border-white/20"
+              alt="Foto ampliada" 
+              className="max-h-[75vh] max-w-[85vw] object-contain rounded-xl"
             />
 
             <div className="mt-3 flex items-center gap-3">
               <a 
                 href={previewImageUrl} 
                 download="evidencia_emergencia.jpg"
-                className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 border border-white/20 transition-all cursor-pointer"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
               >
                 <Download className="w-4 h-4" />
-                <span>Descargar Foto Original</span>
+                <span>Descargar Foto</span>
               </a>
             </div>
           </div>

@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
+import QrStandaloneExporterView from './QrStandaloneExporterView';
 import { 
   renderOfficialStickerToCanvas,
-  exportOfficialStickerSvg,
-  exportOfficialStickerPdf,
-  exportOfficialStickerJpg,
-  exportBatchOfficialZip,
-  exportBatchOfficialPliegoPdf,
-  exportBatchJpgZip,
+  exportBatchOfficialByFormat,
   DEFAULT_CANVAS_CONFIG,
+  OFFICIAL_TEMPLATE_ASPECT,
   calculateCanvasRollLayout,
   exportCanvasRollPdf,
   exportCanvasRollSvg
@@ -19,20 +16,17 @@ import {
   Download, 
   Printer, 
   FileText, 
-  Image as ImageIcon,
   Smartphone, 
   Filter, 
   Plus, 
   Car, 
   CheckCircle2, 
-  Sparkles,
   Wifi,
   ExternalLink,
   Copy,
   Check,
   Search,
   Tag,
-  Link2,
   Eye,
   User,
   Phone,
@@ -43,11 +37,14 @@ import {
   RotateCcw,
   Trash2,
   Edit3,
-  Sliders,
-  Scissors
+  Archive,
+  Scissors,
+  X,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
-export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
+export default function QrManagerView({ searchQuery = '' }) {
   const { 
     qrList, 
     createBatchQrs, 
@@ -61,9 +58,12 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
     toggleQrPrinted
   } = useApp();
 
+  const [showStandaloneExporter, setShowStandaloneExporter] = useState(false);
+  const [showEmissionMenu, setShowEmissionMenu] = useState(false);
   const [selectedSku, setSelectedSku] = useState(qrList[0]?.sku || 'EV8842VE');
   const [filterType, setFilterType] = useState('todos');
   const [printStatusFilter, setPrintStatusFilter] = useState('todos'); // 'todos' | 'pendientes' | 'impresos'
+  const [batchFilter, setBatchFilter] = useState('todos');
   const [printOnlyPendingInBatch, setPrintOnlyPendingInBatch] = useState(false);
   const [selectedSizeCm, setSelectedSizeCm] = useState(8); // 5, 8, 12 cm
   const [isExporting, setIsExporting] = useState(false);
@@ -87,17 +87,71 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [showSingleModal, setShowSingleModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const [showCanvasRollModal, setShowCanvasRollModal] = useState(false);
+  const [showCanvasRollPanel, setShowCanvasRollPanel] = useState(false);
+  const [batchExportFormat, setBatchExportFormat] = useState('jpg'); // 'jpg' | 'svg' | 'pdf' | 'png'
+  const [batchDeliveryMode, setBatchDeliveryMode] = useState('zip'); // 'zip' | 'individual'
   const [canvasConfig, setCanvasConfig] = useState({ ...DEFAULT_CANVAS_CONFIG, targetRows: 3 });
 
   // Configuración de Impresión / Salida a Imprenta
   const [printConfig, setPrintConfig] = useState({
-    cutExternal: true,    // Trazo fucsia perimetral exterior (#F0047F)
-    cutInternal: true,    // Trazos fucsia interiores de troquel (#F0047F)
-    showBatchCode: true,  // Mostrar número de lote en lateral
-    batchCodeText: 'L1C', // Texto personalizado del lote
+    cutExternal: true,     // Trazo fucsia perimetral exterior (#F0047F)
+    cutInternal: true,     // Trazos fucsia interiores de troquel (#F0047F)
+    showBatchCode: true,   // Mostrar número de lote en lateral
+    batchCodeText: 'L1C',  // Texto personalizado del lote
+    includeQr: true,       // Mostrar los 2 QR y su SKU alfanumérico
+    templateWidthMm: 45,   // Ancho de plantilla en mm
+    templateHeightMm: 130  // Alto de plantilla en mm
   });
+  const [templateUnit, setTemplateUnit] = useState('mm'); // 'mm' | 'cm'
+  const [templateWidthInput, setTemplateWidthInput] = useState('45');
+  const [templateHeightInput, setTemplateHeightInput] = useState('130');
   const [printExportCount, setPrintExportCount] = useState(1);
+
+  const formatTemplateMeasure = (mm, targetUnit) => {
+    const val = targetUnit === 'cm' ? mm / 10 : mm;
+    return String(Math.round(val * 100) / 100);
+  };
+
+  const handleTemplateUnitChange = (nextUnit) => {
+    if (nextUnit === templateUnit) return;
+    setTemplateUnit(nextUnit);
+    setTemplateWidthInput(formatTemplateMeasure(printConfig.templateWidthMm, nextUnit));
+    setTemplateHeightInput(formatTemplateMeasure(printConfig.templateHeightMm, nextUnit));
+  };
+
+  const handleTemplateWidthChange = (rawVal) => {
+    setTemplateWidthInput(rawVal);
+    const parsed = parseFloat(rawVal);
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    const rawMm = templateUnit === 'cm' ? parsed * 10 : parsed;
+    const widthMm = Math.round(Math.max(15, Math.min(300, rawMm)) * 10) / 10;
+    const heightMm = Math.round((widthMm / OFFICIAL_TEMPLATE_ASPECT) * 10) / 10;
+    setPrintConfig(prev => ({ ...prev, templateWidthMm: widthMm, templateHeightMm: heightMm }));
+    setTemplateHeightInput(formatTemplateMeasure(heightMm, templateUnit));
+  };
+
+  const handleTemplateHeightChange = (rawVal) => {
+    setTemplateHeightInput(rawVal);
+    const parsed = parseFloat(rawVal);
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    const rawMm = templateUnit === 'cm' ? parsed * 10 : parsed;
+    const heightMm = Math.round(Math.max(40, Math.min(900, rawMm)) * 10) / 10;
+    const widthMm = Math.round((heightMm * OFFICIAL_TEMPLATE_ASPECT) * 10) / 10;
+    setPrintConfig(prev => ({ ...prev, templateWidthMm: widthMm, templateHeightMm: heightMm }));
+    setTemplateWidthInput(formatTemplateMeasure(widthMm, templateUnit));
+  };
+
+  const handleResetTemplateSize = () => {
+    setPrintConfig(prev => ({ ...prev, templateWidthMm: 45, templateHeightMm: 130 }));
+    setTemplateWidthInput(formatTemplateMeasure(45, templateUnit));
+    setTemplateHeightInput(formatTemplateMeasure(130, templateUnit));
+  };
+
+  const rawPreviewW = printConfig.templateWidthMm * 2.9;
+  const rawPreviewH = printConfig.templateHeightMm * 2.9;
+  const previewFitScale = Math.min(1, 210 / rawPreviewW, 410 / rawPreviewH);
+  const previewCanvasCssW = Math.round(rawPreviewW * previewFitScale);
+  const previewCanvasCssH = Math.round(rawPreviewH * previewFitScale);
 
   // QRs Llenos vs Vacíos
   const activeQrs = qrList.filter(q => q.status === 'active');
@@ -107,6 +161,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
   const [batchCount, setBatchCount] = useState(1);
   const [batchPrefix, setBatchPrefix] = useState('EV');
   const [batchCategory, setBatchCategory] = useState('Auto');
+  const [batchDescription, setBatchDescription] = useState('');
 
   // Datos para emisión individual
   const [singleSkuInput, setSingleSkuInput] = useState('');
@@ -120,29 +175,62 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
     return window.location.origin;
   };
 
-  const targetQrUrl = currentQr ? `${getBaseUrl()}/v/${currentQr.sku}` : '';
+  const previewStickerSku = currentQr?.sku || 'EV3362VE';
+  const targetQrUrl = `${getBaseUrl()}/v/${previewStickerSku}`;
 
   // Dibujar el sticker oficial en el canvas cada vez que cambie el SKU o la configuración de impresión
   useEffect(() => {
+    if (!showPrintModal || !canvasRef.current) return;
     let isCancelled = false;
     async function renderCanvas() {
-      if (!currentQr || !canvasRef.current) return;
       try {
-        await renderOfficialStickerToCanvas(currentQr.sku, targetQrUrl, canvasRef.current, printConfig);
+        await renderOfficialStickerToCanvas(previewStickerSku, targetQrUrl, canvasRef.current, {
+          ...printConfig,
+          previewDpi: 240
+        });
       } catch (err) {
-        console.error("Error al renderizar canvas QR:", err);
+        if (!isCancelled) {
+          console.error("Error al renderizar canvas QR:", err);
+        }
       }
     }
     renderCanvas();
     return () => { isCancelled = true; };
-  }, [currentQr, targetQrUrl, printConfig]);
+  }, [previewStickerSku, targetQrUrl, printConfig, showPrintModal]);
 
   const pendingPrintCount = qrList.filter(q => !q.isPrinted).length;
   const printedCount = qrList.filter(q => q.isPrinted).length;
 
+  const batchOptions = Object.values(
+    qrList.reduce((acc, q) => {
+      if (!q.batchId && !q.batchDescription) return acc;
+      const key = q.batchId || `DESC:${q.batchDescription}`;
+      if (!acc[key]) {
+        acc[key] = {
+          id: key,
+          batchId: q.batchId || key,
+          description: q.batchDescription || '',
+          createdAt: q.createdAt || null,
+          total: 0,
+          active: 0
+        };
+      }
+      acc[key].total += 1;
+      if (q.status === 'active') acc[key].active += 1;
+      return acc;
+    }, {})
+  );
+
+  const selectedBatchMeta = batchFilter !== 'todos'
+    ? batchOptions.find(b => b.id === batchFilter) || null
+    : null;
+
   const filteredQrs = qrList.filter(q => {
+    const qBatchKey = q.batchId || (q.batchDescription ? `DESC:${q.batchDescription}` : '');
     const matchesSearch = !searchQuery || (
       q.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (q.batchDescription && q.batchDescription.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (q.batchId && q.batchId.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (q.holder?.name && q.holder.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (q.holder?.cedula && q.holder.cedula.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (q.holder?.vehicle && q.holder.vehicle.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -154,8 +242,9 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
       : printStatusFilter === 'pendientes'
         ? !q.isPrinted
         : Boolean(q.isPrinted);
+    const matchesBatch = batchFilter === 'todos' || qBatchKey === batchFilter;
 
-    return matchesSearch && matchesFilter && matchesPrint;
+    return matchesSearch && matchesFilter && matchesPrint && matchesBatch;
   });
 
   const handleCopyLink = (sku) => {
@@ -201,98 +290,49 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
     }
   };
 
-  const handleExportZip = async (customCount = null) => {
+  const resolveExportPool = (customCount = null) => {
+    if (printConfig.includeQr === false) {
+      const count = Math.max(1, Number(customCount) || 1);
+      return Array.from({ length: count }, (_, idx) => ({ sku: `PLANTILLA_${idx + 1}` }));
+    }
     const pool = printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted) : filteredQrs;
     const countToUse = customCount ? Math.min(Number(customCount), pool.length) : pool.length;
-    const listToExport = pool.slice(0, countToUse);
+    return pool.slice(0, countToUse);
+  };
+
+  const handleExportBatchByFormat = async (customCount = null) => {
+    const listToExport = resolveExportPool(customCount);
     if (listToExport.length === 0) {
       alert("No hay stickers para exportar con los filtros seleccionados.");
       return;
     }
     setIsExporting(true);
     try {
-      await exportBatchOfficialZip(listToExport, getBaseUrl, printConfig);
-      markQrsAsPrinted(listToExport.map(q => q.sku));
+      await exportBatchOfficialByFormat(listToExport, getBaseUrl, printConfig, batchExportFormat, batchDeliveryMode);
+      if (printConfig.includeQr !== false) {
+        markQrsAsPrinted(listToExport.map(q => q.sku));
+      }
     } catch (e) {
-      alert("Error al exportar ZIP: " + e.message);
+      alert("Error al exportar lote: " + e.message);
     }
     setIsExporting(false);
-  };
-
-  const handleExportPliegoPdf = async (customCount = null) => {
-    const pool = printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted) : filteredQrs;
-    const countToUse = customCount ? Math.min(Number(customCount), pool.length) : pool.length;
-    const listToExport = pool.slice(0, countToUse);
-    if (listToExport.length === 0) {
-      alert("No hay stickers para generar pliego con los filtros seleccionados.");
-      return;
-    }
-    setIsExporting(true);
-    try {
-      await exportBatchOfficialPliegoPdf(listToExport, getBaseUrl, printConfig);
-      markQrsAsPrinted(listToExport.map(q => q.sku));
-    } catch (e) {
-      alert("Error al generar Pliego PDF: " + e.message);
-    }
-    setIsExporting(false);
-  };
-
-  const handleExportJpgZip = async (customCount = null) => {
-    const pool = printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted) : filteredQrs;
-    const countToUse = customCount ? Math.min(Number(customCount), pool.length) : pool.length;
-    const listToExport = pool.slice(0, countToUse);
-    if (listToExport.length === 0) {
-      alert("No hay stickers para exportar en JPG con los filtros seleccionados.");
-      return;
-    }
-    setIsExporting(true);
-    try {
-      await exportBatchJpgZip(listToExport, getBaseUrl, printConfig);
-      markQrsAsPrinted(listToExport.map(q => q.sku));
-    } catch (e) {
-      alert("Error al exportar lote JPG: " + e.message);
-    }
-    setIsExporting(false);
-  };
-
-  const handleDownloadSingleSvg = () => {
-    if (!currentQr) return;
-    exportOfficialStickerSvg(currentQr.sku, targetQrUrl, printConfig);
-    markQrsAsPrinted([currentQr.sku]);
-  };
-
-  const handleDownloadSinglePdf = async () => {
-    if (!currentQr) return;
-    try {
-      await exportOfficialStickerPdf(currentQr.sku, targetQrUrl, printConfig);
-      markQrsAsPrinted([currentQr.sku]);
-    } catch (e) {
-      alert("Error al generar PDF individual: " + e.message);
-    }
-  };
-
-  const handleDownloadSingleJpg = async () => {
-    if (!currentQr) return;
-    try {
-      await exportOfficialStickerJpg(currentQr.sku, targetQrUrl, printConfig);
-      markQrsAsPrinted([currentQr.sku]);
-    } catch (e) {
-      alert("Error al generar JPG individual: " + e.message);
-    }
   };
 
   const handleExportCanvasPdf = async () => {
     setIsExporting(true);
     try {
-      const pool = printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted) : filteredQrs;
-      const res = await exportCanvasRollPdf(pool, getBaseUrl, canvasConfig, printConfig);
-      
-      const layout = calculateCanvasRollLayout(canvasConfig);
-      const usedSkus = pool.slice(0, layout.totalStickers).map(q => q.sku);
-      if (usedSkus.length > 0) {
-        markQrsAsPrinted(usedSkus);
+      const pool = printConfig.includeQr === false
+        ? resolveExportPool(calculateCanvasRollLayout(canvasConfig, printConfig).totalStickers)
+        : (printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted) : filteredQrs);
+      await exportCanvasRollPdf(pool, getBaseUrl, canvasConfig, printConfig);
+
+      const layout = calculateCanvasRollLayout(canvasConfig, printConfig);
+      if (printConfig.includeQr !== false) {
+        const usedSkus = pool.slice(0, layout.totalStickers).map(q => q.sku);
+        if (usedSkus.length > 0) {
+          markQrsAsPrinted(usedSkus);
+        }
       }
-      setShowCanvasRollModal(false);
     } catch (err) {
       alert("Error al exportar Lienzo PDF CMYK: " + err.message);
     }
@@ -302,62 +342,33 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
   const handleExportCanvasSvg = async () => {
     setIsExporting(true);
     try {
-      const pool = printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted) : filteredQrs;
+      const pool = printConfig.includeQr === false
+        ? resolveExportPool(calculateCanvasRollLayout(canvasConfig, printConfig).totalStickers)
+        : (printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted) : filteredQrs);
       exportCanvasRollSvg(pool, getBaseUrl, canvasConfig, printConfig);
-      
-      const layout = calculateCanvasRollLayout(canvasConfig);
-      const usedSkus = pool.slice(0, layout.totalStickers).map(q => q.sku);
-      if (usedSkus.length > 0) {
-        markQrsAsPrinted(usedSkus);
+
+      const layout = calculateCanvasRollLayout(canvasConfig, printConfig);
+      if (printConfig.includeQr !== false) {
+        const usedSkus = pool.slice(0, layout.totalStickers).map(q => q.sku);
+        if (usedSkus.length > 0) {
+          markQrsAsPrinted(usedSkus);
+        }
       }
-      setShowCanvasRollModal(false);
     } catch (err) {
       alert("Error al exportar Lienzo SVG CMYK: " + err.message);
     }
     setIsExporting(false);
   };
 
-  const handlePrintCurrent = () => {
-    if (!canvasRef.current || !currentQr) return;
-    const dataUrl = canvasRef.current.toDataURL('image/png');
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Imprimir Sticker - ${currentQr.sku}</title>
-          <style>
-            body { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f8fafc; font-family: sans-serif; }
-            .sticker-card { text-align: center; }
-            img { width: 45mm; height: 130mm; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-            @media print {
-              body { background: white; }
-              .no-print { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="sticker-card">
-            <img src="${dataUrl}" />
-            <p class="no-print" style="margin-top: 15px; font-weight: bold; color: #532C8C;">
-              Sticker oficial Escudo Vial (45 x 130 mm) - ${currentQr.sku}
-            </p>
-          </div>
-          <script>
-            window.onload = () => { window.print(); };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-  };
-
   const handleCreateBatch = async (e) => {
     e.preventDefault();
     setShowBatchModal(false);
-    const count = Number(batchCount) || 10;
+    const count = Math.max(1, Math.min(1000, parseInt(batchCount, 10) || 1));
+    setBatchCount(count);
     const prefix = batchPrefix.trim().toUpperCase() || 'EV2026';
-    const created = await createBatchQrs(count, prefix, batchCategory);
+    const created = await createBatchQrs(count, prefix, batchCategory, batchDescription);
+    setBatchDescription('');
+    setBatchFilter('todos');
     if (created && created.length > 0) {
       setSelectedSku(created[0].sku);
     }
@@ -389,7 +400,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
   const handleDeleteQr = (e, qr) => {
     e.stopPropagation();
     const confirmed = window.confirm(
-      `⚠️ ¿Estás SEGURO de que deseas eliminar permanentemente el sticker QR ${qr.sku}?\n\n` +
+      `¿Estás SEGURO de que deseas eliminar permanentemente el sticker QR ${qr.sku}?\n\n` +
       `Esta acción borrará el sticker del catálogo y de la base de datos Supabase.`
     );
     if (confirmed) {
@@ -397,535 +408,199 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
     }
   };
 
+  if (showStandaloneExporter) {
+    return (
+      <QrStandaloneExporterView
+        searchQuery={searchQuery}
+        onBack={() => setShowStandaloneExporter(false)}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5 mt-4">
-      {/* Barra de Acciones Principales y Creación de QRs */}
-      <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-purple-100 text-[#532C8C] flex items-center justify-center">
-              <QrCode className="w-4 h-4" />
-            </div>
-            <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
-              CENTRO DE GESTIÓN Y CATÁLOGO DE QRS
-            </h2>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Genera códigos individuales o por lote, exporta para imprenta y consulta a qué pantalla y vehículo dirige cada sticker.
-          </p>
-        </div>
+      {/* Barra de Acciones Principales y Creación de QR */}
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
+          CENTRO DE GESTIÓN Y CATÁLOGO DE QR
+        </h2>
 
-        {/* Botones de Emisión e Impresión */}
-        <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowSingleModal(true)}
-            className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
-            title="Dar de alta 1 QR en inventario"
-          >
-            <Plus className="w-3.5 h-3.5 text-teal-400" />
-            <span>Emitir 1 QR</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowBatchModal(true)}
-            className="flex-1 md:flex-none bg-[#00A896] hover:bg-[#008677] active:scale-95 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
-            title="Emitir varios QRs en inventario"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Emitir Lote</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowPrintModal(true)}
-            className="flex-1 md:flex-none bg-[#532C8C] hover:bg-[#432172] active:scale-95 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer border border-purple-400/30"
-            title="Configurar corte, lote y cantidad para imprenta"
-          >
-            <Printer className="w-3.5 h-3.5 text-teal-300" />
-            <span>Configurar e Imprimir</span>
-          </button>
-
-          {onGoToExporter && (
+        {/* Dos Botones Principales: Emisión QR (Desplegable) y Configurar e Imprimir */}
+        <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+          {/* Botón Desplegable: Emisión QR */}
+          <div className="relative flex-1 md:flex-none">
             <button
               type="button"
-              onClick={onGoToExporter}
-              className="flex-1 md:flex-none bg-purple-50 hover:bg-[#532C8C] text-[#532C8C] hover:text-white border border-purple-200 hover:border-[#532C8C] font-extrabold text-xs px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+              onClick={() => setShowEmissionMenu(prev => !prev)}
+              aria-expanded={showEmissionMenu}
+              className="w-full md:w-auto bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 hover:border-blue-300 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>QRs Puros</span>
+              <QrCode className="w-4 h-4 text-blue-600" />
+              <span>Emisión QR</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-150 ${showEmissionMenu ? 'rotate-180' : ''}`} />
             </button>
-          )}
+
+            {showEmissionMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowEmissionMenu(false)} 
+                />
+                <div className="absolute right-0 md:left-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/90 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEmissionMenu(false);
+                      setShowSingleModal(true);
+                    }}
+                    className="w-full text-left flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-blue-600" />
+                    <span>Emitir QR Individual</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEmissionMenu(false);
+                      setShowBatchModal(true);
+                    }}
+                    className="w-full text-left flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
+                  >
+                    <Layers className="w-4 h-4 text-blue-600" />
+                    <span>Emitir QR Lotes</span>
+                  </button>
+
+                  <div className="my-1 border-t border-slate-100" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEmissionMenu(false);
+                      setShowStandaloneExporter(true);
+                    }}
+                    className="w-full text-left flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
+                  >
+                    <Download className="w-4 h-4 text-blue-600" />
+                    <span>Exportar QR Solos</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Botón Único Directo: Imprimir */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowEmissionMenu(false);
+              setPrintExportCount(Math.min(15, Math.max(1, printOnlyPendingInBatch ? pendingPrintCount : filteredQrs.length || 1)));
+              setShowPrintModal(true);
+            }}
+            className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
+            title="Configurar plantilla e imprimir"
+          >
+            <Printer className="w-4 h-4 text-white" />
+            <span>Imprimir</span>
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Columna Izquierda: Visor del Sticker Físico Real, Destino y Acciones (4 Columnas) */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          {currentQr ? (
-            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col items-center">
-              <div className="w-full flex items-center justify-between pb-3 border-b border-slate-100">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Sticker Seleccionado
-                  </span>
-                  <span className="text-sm font-mono text-[#532C8C] font-extrabold">
-                    {currentQr.sku}
-                  </span>
-                </div>
-                <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
-                  currentQr.status === 'active' 
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
-                    : 'bg-amber-100 text-amber-800 border border-amber-200'
-                }`}>
-                  {currentQr.status === 'active' ? '● VINCULADO 24/7' : '○ EN STOCK'}
-                </span>
-              </div>
-
-              {/* Formato Oficial de Imprenta */}
-              <div className="w-full mt-3 flex items-center justify-between bg-purple-50/80 p-2.5 rounded-2xl border border-purple-200 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#F0047F] shadow-xs" title="Línea de corte" />
-                  <span className="font-extrabold text-[#532C8C] text-[11px]">Plantilla Oficial Imprenta</span>
-                </div>
-                <span className="bg-purple-100/90 text-[#432172] font-mono font-bold text-[10px] px-2 py-0.5 rounded-lg border border-purple-200">
-                  45 x 130 mm · Troquelado
-                </span>
-              </div>
-
-              {/* Dominio Oficial Activo */}
-              <div className="w-full mt-2 flex items-center justify-between bg-teal-50/70 p-2.5 rounded-2xl border border-teal-100 text-xs">
-                <div className="flex items-center gap-1.5 text-[#008677] font-bold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Enlace Oficial en la Nube:</span>
-                </div>
-                <span className="font-mono text-[11px] text-[#532C8C] font-extrabold truncate max-w-[200px]" title={window.location.origin}>
-                  {window.location.origin}
-                </span>
-              </div>
-
-              {/* RENDERIZADO DEL STICKER REAL EN CANVAS */}
-              <div className="my-3 relative group flex flex-col items-center">
-                <div className="p-2 bg-slate-900 rounded-3xl shadow-2xl border-4 border-slate-800">
-                  <canvas
-                    ref={canvasRef}
-                    style={{
-                      width: '142px',
-                      height: '410px',
-                    }}
-                    className="rounded-xl transition-all duration-300 shadow-md bg-white"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-400 mt-2 font-mono text-center">
-                  Línea fucsia (#F0047F) = Vector de corte plotter
-                </span>
-              </div>
-
-              {/* Personalización de Salida para Imprenta en Tiempo Real */}
-              <div className="w-full bg-slate-50 rounded-2xl p-3 border border-slate-200 flex flex-col gap-2.5 text-xs mb-1">
-                <div className="flex items-center justify-between pb-1.5 border-b border-slate-200">
-                  <span className="font-extrabold text-[#532C8C] text-[11px] flex items-center gap-1.5 uppercase tracking-wide">
-                    <Sliders className="w-3.5 h-3.5 text-[#00A896]" />
-                    Ajustes de Impresión
-                  </span>
-                  <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 font-bold px-1.5 py-0.5 rounded">
-                    En vivo
-                  </span>
-                </div>
-
-                {/* Switch 1: Vector de Corte Externo */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-2.5 h-2.5 rounded-full ${printConfig.cutExternal ? 'bg-[#F0047F]' : 'bg-slate-300'}`} />
-                    <span className="font-bold text-slate-700 text-[11px]">Corte externo (Perímetro 45x130)</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPrintConfig(prev => ({ ...prev, cutExternal: !prev.cutExternal }))}
-                    className={`w-10 h-5.5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                      printConfig.cutExternal ? 'bg-[#F0047F]' : 'bg-slate-300'
-                    }`}
-                  >
-                    <div className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-transform ${
-                      printConfig.cutExternal ? 'translate-x-4.5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
-
-                {/* Switch 2: Vectores de Corte Internos */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-2.5 h-2.5 rounded-full ${printConfig.cutInternal ? 'bg-[#F0047F]' : 'bg-slate-300'}`} />
-                    <span className="font-bold text-slate-700 text-[11px]">Cortes internos (2 troqueles)</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPrintConfig(prev => ({ ...prev, cutInternal: !prev.cutInternal }))}
-                    className={`w-10 h-5.5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                      printConfig.cutInternal ? 'bg-[#F0047F]' : 'bg-slate-300'
-                    }`}
-                  >
-                    <div className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-transform ${
-                      printConfig.cutInternal ? 'translate-x-4.5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
-
-                {/* Switch 3: Número de Lote */}
-                <div className="flex items-center justify-between pt-1 border-t border-slate-200/80">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${printConfig.showBatchCode ? 'bg-[#532C8C]' : 'bg-slate-300'}`} />
-                    <span className="font-bold text-slate-700 text-[11px]">Número de Lote lateral</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPrintConfig(prev => ({ ...prev, showBatchCode: !prev.showBatchCode }))}
-                    className={`w-10 h-5.5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                      printConfig.showBatchCode ? 'bg-[#532C8C]' : 'bg-slate-300'
-                    }`}
-                  >
-                    <div className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-transform ${
-                      printConfig.showBatchCode ? 'translate-x-4.5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
-
-                {/* Input: Texto del Lote (si está activo) */}
-                {printConfig.showBatchCode && (
-                  <div className="flex items-center gap-2 mt-0.5 bg-white p-1.5 rounded-xl border border-slate-200">
-                    <span className="text-[10px] font-bold text-slate-500 pl-1 uppercase">Texto lote:</span>
-                    <input
-                      type="text"
-                      maxLength={12}
-                      value={printConfig.batchCodeText}
-                      onChange={(e) => setPrintConfig(prev => ({ ...prev, batchCodeText: e.target.value.toUpperCase() }))}
-                      placeholder="Ej. L1C"
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-mono uppercase font-bold text-slate-900 text-xs focus:outline-none focus:border-[#532C8C]"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Ficha Explicativa: A dónde dirige este QR */}
-              <div className="w-full bg-slate-50 rounded-2xl p-3 border border-slate-200 text-left text-xs flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                    <Link2 className="w-3 h-3 text-[#532C8C]" />
-                    A dónde dirige este QR:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyLink(currentQr.sku)}
-                    className="text-[11px] font-bold text-[#00A896] hover:text-[#008677] flex items-center gap-1 cursor-pointer"
-                  >
-                    {copiedSku === currentQr.sku ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-emerald-600 font-extrabold">¡Copiado!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copiar Enlace</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <div className="font-mono text-[11px] text-slate-700 bg-white p-2 rounded-xl border border-slate-200/80 break-all select-all font-semibold">
-                  {targetQrUrl}
-                </div>
-
-                <div className="text-[11px] text-slate-500 mt-1 leading-snug">
-                  {currentQr.status === 'active' ? (
-                    <span>
-                      👉 Dirige a la <strong>pantalla protegida</strong> del vehículo <strong>{currentQr.holder?.vehicle?.replace(/\s*\([^)]*\)\s*$/, '')} ({currentQr.holder?.plate || 'S/P'})</strong> a nombre de <strong>{currentQr.holder?.name}</strong>.
-                    </span>
-                  ) : (
-                    <span>
-                      👉 Dirige a la <strong>pantalla de activación</strong> para que el nuevo usuario registre su vehículo y datos de emergencia con el sticker <strong>{currentQr.sku}</strong>.
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Botones de Acción del Sticker Individual */}
-              <div className="w-full grid grid-cols-4 gap-1 mt-3">
-                <button
-                  type="button"
-                  onClick={handleDownloadSingleSvg}
-                  title="Descargar SVG con vector de corte magenta (#F0047F) para plotter"
-                  className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[10px] py-2 rounded-xl flex items-center justify-center gap-1 transition-all shadow-sm cursor-pointer"
-                >
-                  <Download className="w-3 h-3 text-teal-300" />
-                  <span>SVG Plotter</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDownloadSinglePdf}
-                  title="Descargar PDF 45x130mm listo para imprenta"
-                  className="bg-[#532C8C] hover:bg-[#432172] text-white font-extrabold text-[10px] py-2 rounded-xl flex items-center justify-center gap-1 transition-all shadow-sm cursor-pointer"
-                >
-                  <FileText className="w-3 h-3 text-purple-200" />
-                  <span>PDF 45x130</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDownloadSingleJpg}
-                  title="Descargar JPG oficial en alta resolución 300 ppp"
-                  className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[10px] py-2 rounded-xl flex items-center justify-center gap-1 transition-all shadow-sm cursor-pointer"
-                >
-                  <ImageIcon className="w-3 h-3 text-teal-200" />
-                  <span>JPG 300ppp</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handlePrintCurrent}
-                  title="Imprimir troquel a escala 1:1"
-                  className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-extrabold text-[10px] py-2 rounded-xl flex items-center justify-center gap-1 transition-all shadow-sm cursor-pointer"
-                >
-                  <Printer className="w-3 h-3 text-slate-600" />
-                  <span>Imprimir</span>
-                </button>
-              </div>
-
-              <a
-                href={targetQrUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 w-full bg-[#00A896] hover:bg-[#008677] text-white font-extrabold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm text-center"
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>Abrir Pantalla del Botón (Pestaña Nueva)</span>
-              </a>
+      {/* Catálogo General de Códigos QR (Ancho Completo) */}
+      <div className="flex flex-col gap-4">
+        {/* 4 Tarjetas KPI de Resumen de Inventario (Sin iconos en esquina superior derecha) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: QRs Llenos / Entregados */}
+          <div 
+            onClick={() => setFilterType('active')}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${
+              filterType === 'active' 
+                ? 'bg-emerald-50/70 border-emerald-400 ring-2 ring-emerald-500/20' 
+                : 'bg-white border-slate-200/90 hover:border-emerald-300'
+            }`}
+          >
+            <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wider block">
+              QRs Llenos / Entregados
+            </span>
+            <div className="text-2xl font-bold text-slate-900 tracking-tight mt-2">
+              {activeQrs.length}
             </div>
-          ) : (
-            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 rounded-2xl bg-purple-50 text-[#532C8C] flex items-center justify-center mb-3">
-                <QrCode className="w-8 h-8" />
-              </div>
-              <h3 className="font-extrabold text-slate-800 text-sm">Sin Stickers en Inventario</h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-[240px]">
-                Actualmente no hay códigos QR registrados en el catálogo. Genera uno individual o un lote masivo para comenzar.
-              </p>
-              <div className="flex flex-col gap-2 w-full mt-5">
-                <button
-                  type="button"
-                  onClick={() => setShowBatchModal(true)}
-                  className="w-full bg-[#00A896] hover:bg-[#008677] active:scale-95 text-white font-extrabold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>+ Generar Lote Masivo</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowSingleModal(true)}
-                  className="w-full bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-extrabold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5 text-teal-400" />
-                  <span>+ Generar QR Individual</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Exportación Masiva para Imprenta */}
-          <div className="bg-gradient-to-br from-purple-950 via-[#532C8C] to-[#432172] rounded-3xl p-5 text-white shadow-md flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span className="font-extrabold text-xs tracking-wider uppercase text-teal-300 flex items-center gap-1.5">
-                <Download className="w-4 h-4" />
-                Exportación Masiva Imprenta
-              </span>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full font-bold">
-                  ⏳ {pendingPrintCount} pendientes
-                </span>
-                <span className="text-[10px] font-mono bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
-                  ✅ {printedCount} impresos
-                </span>
-              </div>
-            </div>
-
-            <p className="text-xs text-white/80 leading-relaxed">
-              Descarga los stickers en JPG individuales a 300 ppp o en vector SVG para imprenta. Al descargar se marcan automáticamente como <strong>Impresos</strong>.
+            <p className="text-[11px] text-slate-500 font-medium mt-1">
+              Conductor y vehículo registrado 24/7
             </p>
+          </div>
 
-            {/* Selector rápido: ¿Descargar solo pendientes o todos? */}
-            <div className="flex items-center gap-2 bg-black/30 p-1 rounded-xl text-xs font-bold border border-white/10">
-              <button
-                type="button"
-                onClick={() => setPrintOnlyPendingInBatch(true)}
-                className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer text-[11px] ${
-                  printOnlyPendingInBatch ? 'bg-amber-400 text-slate-950 font-black shadow-sm' : 'text-white/80 hover:text-white'
-                }`}
-              >
-                ⏳ Solo Pendientes ({pendingPrintCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setPrintOnlyPendingInBatch(false)}
-                className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer text-[11px] ${
-                  !printOnlyPendingInBatch ? 'bg-white/20 text-white font-black shadow-sm' : 'text-white/80 hover:text-white'
-                }`}
-              >
-                📁 Todos ({filteredQrs.length})
-              </button>
+          {/* Card 2: QRs en Stock / Por Llenar */}
+          <div 
+            onClick={() => setFilterType('inactive')}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${
+              filterType === 'inactive' 
+                ? 'bg-amber-50/70 border-amber-400 ring-2 ring-amber-500/20' 
+                : 'bg-white border-slate-200/90 hover:border-amber-300'
+            }`}
+          >
+            <span className="text-xs font-semibold text-amber-800 uppercase tracking-wider block">
+              Generados en Stock
+            </span>
+            <div className="text-2xl font-bold text-slate-900 tracking-tight mt-2">
+              {inactiveQrs.length}
             </div>
+            <p className="text-[11px] text-slate-500 font-medium mt-1">
+              Sin llenar, listos para entregar
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={() => handleExportJpgZip()}
-                title="Descargar paquete ZIP con cada sticker en archivo JPG individual a 300 ppp"
-                className="bg-teal-400 hover:bg-teal-300 active:scale-95 text-slate-950 font-black text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
-              >
-                <ImageIcon className="w-4 h-4 text-slate-950" />
-                <span>Lote JPGs Separados (300 ppp)</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={() => handleExportZip()}
-                title="Descargar lote en formato SVG vectorial puro"
-                className="bg-white/15 hover:bg-white/25 active:scale-95 text-white font-extrabold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 border border-white/20 transition-all cursor-pointer disabled:opacity-50"
-              >
-                <Download className="w-3.5 h-3.5 text-teal-300" />
-                <span>Lote SVGs (Plotter)</span>
-              </button>
+          {/* Card 3: Total Códigos */}
+          <div 
+            onClick={() => {
+              setFilterType('todos');
+              setPrintStatusFilter('todos');
+            }}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${
+              filterType === 'todos' && printStatusFilter === 'todos'
+                ? 'bg-blue-50/60 border-blue-500 ring-2 ring-blue-500/20' 
+                : 'bg-white border-slate-200/90 hover:border-blue-300'
+            }`}
+          >
+            <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider block">
+              Total en Inventario
+            </span>
+            <div className="text-2xl font-bold text-slate-900 tracking-tight mt-2">
+              {qrList.length}
             </div>
+            <p className="text-[11px] text-slate-500 font-medium mt-1">
+              {qrList.length > 0 ? `${Math.round((activeQrs.length / qrList.length) * 100)}% de stickers vinculados` : 'Sin stickers registrados'}
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={() => handleExportPliegoPdf()}
-                title="Pliego A3 con 15 stickers por hoja"
-                className="bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] py-2 rounded-xl flex items-center justify-center gap-1 border border-white/15 transition-all cursor-pointer disabled:opacity-50"
-              >
-                <FileText className="w-3.5 h-3.5 text-purple-200" />
-                <span>Pliego A3 PDF (15 stickers / hoja)</span>
-              </button>
-
-              {/* NUEVA EXPORTACIÓN POR LIENZO / BOBINA CMYK (PLOTTER DE CORTE) */}
-              <button
-                type="button"
-                onClick={() => setShowCanvasRollModal(true)}
-                className="bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 active:scale-95 text-slate-950 font-black text-xs py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
-                title="Configurar ancho de bobina (rollo), separación milimétrica y exportar filas completas en PDF CMYK Vectorial"
-              >
-                <Scissors className="w-4 h-4 text-slate-950" />
-                <span>Exportar por Lienzo / Bobina CMYK</span>
-                <span className="bg-slate-950 text-amber-300 text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase">
-                  Plotter
-                </span>
-              </button>
+          {/* Card 4: Pendientes de Imprenta */}
+          <div 
+            onClick={() => setPrintStatusFilter(prev => prev === 'pendientes' ? 'todos' : 'pendientes')}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${
+              printStatusFilter === 'pendientes'
+                ? 'bg-amber-50/70 border-amber-400 ring-2 ring-amber-500/20'
+                : 'bg-white border-slate-200/90 hover:border-slate-300'
+            }`}
+          >
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+              Pendientes de Imprenta
+            </span>
+            <div className="flex items-baseline gap-2 mt-2">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">
+                {pendingPrintCount}
+              </span>
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                {printedCount} impresos
+              </span>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setPrintExportCount(Math.min(15, filteredQrs.length || 1));
-                setShowPrintModal(true);
-              }}
-              className="w-full mt-1 bg-white hover:bg-purple-50 text-[#532C8C] font-extrabold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm border border-white/30"
-            >
-              <Printer className="w-3.5 h-3.5 text-[#532C8C]" />
-              <span>Personalizar Cantidad y Salida a Imprenta</span>
-            </button>
+            <p className="text-[11px] text-slate-500 font-medium mt-1">
+              Cola de impresión para plotter
+            </p>
           </div>
         </div>
 
-        {/* Columna Derecha: Catálogo General de Códigos QR (8 Columnas) */}
-        <div className="lg:col-span-8 flex flex-col gap-4">
-          {/* 3 Tarjetas KPI de Resumen de Inventario */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* Card 1: QRs Llenos / Entregados */}
-            <div 
-              onClick={() => setFilterType('active')}
-              className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
-                filterType === 'active' 
-                  ? 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-500/20' 
-                  : 'bg-white border-slate-200 hover:border-emerald-300'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10.5px] font-extrabold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  QRs Llenos / Entregados
-                </span>
-                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-slate-900 mt-1.5">
-                {activeQrs.length}
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                Conductor y vehículo registrado 24/7
-              </p>
-            </div>
-
-            {/* Card 2: QRs en Stock / Por Llenar */}
-            <div 
-              onClick={() => setFilterType('inactive')}
-              className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
-                filterType === 'inactive' 
-                  ? 'bg-amber-50/90 border-amber-400 ring-2 ring-amber-500/20' 
-                  : 'bg-white border-slate-200 hover:border-amber-300'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10.5px] font-extrabold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-amber-600" />
-                  Generados en Stock (Sin Llenar)
-                </span>
-                <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-                  <QrCode className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-slate-900 mt-1.5">
-                {inactiveQrs.length}
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                Listos para imprimir y entregar a usuarios
-              </p>
-            </div>
-
-            {/* Card 3: Total Códigos */}
-            <div 
-              onClick={() => setFilterType('todos')}
-              className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
-                filterType === 'todos' 
-                  ? 'bg-purple-50/90 border-purple-400 ring-2 ring-purple-500/20' 
-                  : 'bg-white border-slate-200 hover:border-purple-300'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10.5px] font-extrabold text-[#532C8C] uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5" />
-                  Total en Inventario
-                </span>
-                <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#532C8C] flex items-center justify-center">
-                  <FileText className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-slate-900 mt-1.5">
-                {qrList.length}
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                {qrList.length > 0 ? `${Math.round((activeQrs.length / qrList.length) * 100)}% de stickers vinculados` : 'Sin stickers'}
-              </p>
-            </div>
-          </div>
-
           {/* Barra de Filtros y Pestañas Destacadas */}
-          <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs flex flex-col gap-3">
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col gap-3">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
               <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl w-full md:w-auto overflow-x-auto no-scrollbar">
                 <button
@@ -937,7 +612,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
-                  <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                  
                   <span>QRs Entregados / Llenos</span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
                     filterType === 'active' ? 'bg-emerald-700 text-white' : 'bg-slate-200 text-slate-700'
@@ -951,14 +626,14 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                   onClick={() => setFilterType('inactive')}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
                     filterType === 'inactive'
-                      ? 'bg-[#532C8C] text-white shadow-sm'
+                      ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
                   <Tag className="w-3.5 h-3.5" />
                   <span>Generados en Stock (Sin Llenar)</span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                    filterType === 'inactive' ? 'bg-purple-900 text-white' : 'bg-slate-200 text-slate-700'
+                    filterType === 'inactive' ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700'
                   }`}>
                     {inactiveQrs.length}
                   </span>
@@ -991,7 +666,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
               <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200/80">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 flex items-center gap-1">
-                  <Printer className="w-3 h-3 text-[#532C8C]" />
+                  <Printer className="w-3 h-3 text-blue-600" />
                   Imprenta:
                 </span>
                 <button
@@ -999,7 +674,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                   onClick={() => setPrintStatusFilter('todos')}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     printStatusFilter === 'todos'
-                      ? 'bg-white text-purple-950 font-black shadow-xs border border-purple-200'
+                      ? 'bg-white text-blue-950 font-black shadow-xs border border-blue-200'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -1014,7 +689,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       : 'text-amber-800 hover:bg-amber-100/60'
                   }`}
                 >
-                  <span>⏳ Pendientes</span>
+                  <span>Pendientes</span>
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
                     printStatusFilter === 'pendientes' ? 'bg-black/20 text-white' : 'bg-amber-200/80 text-amber-900'
                   }`}>
@@ -1030,7 +705,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       : 'text-emerald-800 hover:bg-emerald-100/60'
                   }`}
                 >
-                  <span>✅ Ya Impresos</span>
+                  <span>Ya Impresos</span>
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
                     printStatusFilter === 'impresos' ? 'bg-black/20 text-white' : 'bg-emerald-200/80 text-emerald-900'
                   }`}>
@@ -1039,8 +714,32 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 </button>
               </div>
 
-              {/* Acciones Rápidas de Imprenta */}
-              <div className="flex items-center gap-1.5">
+              {/* Acciones Rápidas de Imprenta y Filtro por Lote */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {batchOptions.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={batchFilter}
+                      onChange={(e) => setBatchFilter(e.target.value)}
+                      className="text-[11px] font-semibold bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 outline-none focus:border-blue-600 max-w-[260px]"
+                      title="Filtrar por lote generado para seguimiento"
+                    >
+                      <option value="todos">Todos los lotes ({batchOptions.length})</option>
+                      {batchOptions.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.description
+                            ? `${b.description.slice(0, 32)}${b.description.length > 32 ? '...' : ''} (${b.total})`
+                            : `${b.batchId} (${b.total})`}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedBatchMeta && (
+                      <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">
+                        {selectedBatchMeta.active} de {selectedBatchMeta.total} activados
+                      </span>
+                    )}
+                  </div>
+                )}
                 {pendingPrintCount > 0 && (
                   <button
                     type="button"
@@ -1072,7 +771,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
           </div>
 
           {/* Tabla / Directorio General de QRs Adaptativa */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto max-h-[640px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-200">
@@ -1115,17 +814,32 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                         key={qr.sku}
                         onClick={() => setSelectedSku(qr.sku)}
                         className={`cursor-pointer transition-colors ${
-                          isSelected ? 'bg-purple-50/90 font-semibold' : 'hover:bg-slate-50/80'
+                          isSelected ? 'bg-blue-50/70 font-semibold' : 'hover:bg-slate-50/80'
                         }`}
                       >
                         {/* Columna SKU */}
                         <td className="py-3.5 px-4">
-                          <div className="font-mono font-extrabold text-slate-900 text-sm">
+                          <div className="font-extrabold text-slate-900 text-sm">
                             {qr.sku}
                           </div>
-                          <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-1.5 py-0.2 rounded mt-0.5 inline-block">
-                            {qr.category || 'Auto'}
-                          </span>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-1.5 py-0.2 rounded inline-block">
+                              {qr.category || 'Auto'}
+                            </span>
+                            {qr.batchId && (
+                              <span className="text-[9.5px] font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-1.5 py-0.2 rounded inline-block">
+                                {qr.batchId}
+                              </span>
+                            )}
+                          </div>
+                          {qr.batchDescription && (
+                            <p
+                              className="text-[11px] font-medium text-slate-500 mt-1 max-w-[220px] truncate"
+                              title={qr.batchDescription}
+                            >
+                              {qr.batchDescription}
+                            </p>
+                          )}
                         </td>
 
                         {/* VISTA 1: QRs Entregados / Llenos */}
@@ -1134,10 +848,10 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                             {/* Titular */}
                             <td className="py-3.5 px-4">
                               <div className="font-extrabold text-slate-900 text-[13px] flex items-center gap-1.5">
-                                <User className="w-3.5 h-3.5 text-[#532C8C]" />
+                                <User className="w-3.5 h-3.5 text-blue-600" />
                                 <span>{qr.holder?.name || 'Usuario Escudo Vial'}</span>
                               </div>
-                              <span className="text-[11px] text-slate-500 font-mono">
+                              <span className="text-[11px] text-slate-500 ">
                                 Cédula: {qr.holder?.cedula || 'V-00.000.000'}
                               </span>
                             </td>
@@ -1145,10 +859,10 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                             {/* Vehículo y Placa */}
                             <td className="py-3.5 px-4">
                               <div className="font-bold text-slate-800 flex items-center gap-1">
-                                <Car className="w-3.5 h-3.5 text-[#00A896]" />
+                                <Car className="w-3.5 h-3.5 text-blue-600" />
                                 <span>{qr.holder?.vehicle?.replace(/\s*\([^)]*\)\s*$/, '') || 'Vehículo registrado'}</span>
                               </div>
-                              <span className="font-mono font-extrabold text-[#532C8C] bg-purple-50 px-2 py-0.5 rounded text-[11px] border border-purple-100 mt-0.5 inline-block">
+                              <span className="font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[11px] border border-blue-100 mt-0.5 inline-block">
                                 {qr.holder?.plate || 'S/P'}
                               </span>
                             </td>
@@ -1173,7 +887,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                             {/* Estado Activo */}
                             <td className="py-3.5 px-4">
                               <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                                
                                 Protegido 24/7
                               </span>
                             </td>
@@ -1183,7 +897,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                             {/* Enlace Destino de Activación */}
                             <td className="py-3.5 px-4 max-w-[220px]">
                               <div className="flex items-center gap-1.5">
-                                <span className="font-mono text-[11px] text-[#532C8C] font-bold truncate block">
+                                <span className="text-[11px] text-blue-600 font-bold truncate block">
                                   /v/{qr.sku}
                                 </span>
                                 <button
@@ -1192,7 +906,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                                     e.stopPropagation();
                                     handleCopyLink(qr.sku);
                                   }}
-                                  className="p-1 text-slate-400 hover:text-[#00A896] rounded transition-colors"
+                                  className="p-1 text-slate-400 hover:text-blue-600 rounded transition-colors"
                                   title="Copiar URL de activación"
                                 >
                                   {copiedSku === qr.sku ? (
@@ -1233,7 +947,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                             <td className="py-3.5 px-4 max-w-[200px]">
                               <div className="flex items-center gap-1.5">
                                 <span 
-                                  className="font-mono text-[11px] text-slate-600 truncate block hover:text-[#532C8C]"
+                                  className="text-[11px] text-slate-600 truncate block hover:text-blue-600"
                                   title={linkUrl}
                                 >
                                   /v/{qr.sku}
@@ -1244,7 +958,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                                     e.stopPropagation();
                                     handleCopyLink(qr.sku);
                                   }}
-                                  className="p-1 text-slate-400 hover:text-[#00A896] rounded transition-colors"
+                                  className="p-1 text-slate-400 hover:text-blue-600 rounded transition-colors"
                                   title="Copiar URL completa"
                                 >
                                   {copiedSku === qr.sku ? (
@@ -1264,7 +978,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                               {isActive && qr.holder ? (
                                 <div>
                                   <div className="flex items-center gap-1 font-extrabold text-slate-900">
-                                    <Car className="w-3.5 h-3.5 text-[#532C8C]" />
+                                    <Car className="w-3.5 h-3.5 text-blue-600" />
                                     <span>{qr.holder.vehicle?.replace(/\s*\([^)]*\)\s*$/, '')} ({qr.holder.plate || 'S/P'})</span>
                                   </div>
                                   <span className="text-[11px] text-slate-500 font-medium">
@@ -1281,7 +995,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
 
                             {/* Escaneos */}
                             <td className="py-3.5 px-4">
-                              <span className="font-mono text-slate-700 font-bold bg-slate-100 px-2 py-0.5 rounded">
+                              <span className="text-slate-700 font-bold bg-slate-100 px-2 py-0.5 rounded">
                                 {qr.scansCount || 0}
                               </span>
                             </td>
@@ -1293,7 +1007,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
                                   : 'bg-amber-100 text-amber-800 border border-amber-200'
                               }`}>
-                                {isActive ? '● Lleno 24/7' : '○ En Stock'}
+                                {isActive ? 'Lleno 24/7' : 'En Stock'}
                               </span>
                             </td>
                           </>
@@ -1308,7 +1022,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                               title={`Impreso ${qr.printedAt ? new Date(qr.printedAt).toLocaleDateString() : ''}. Haz clic para cambiar a pendiente.`}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200 transition-all cursor-pointer shadow-2xs"
                             >
-                              <span>✅ Impreso</span>
+                              <span>Impreso</span>
                             </button>
                           ) : (
                             <button
@@ -1317,7 +1031,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                               title="Pendiente de enviar a imprenta. Haz clic para marcar como ya impreso."
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-black bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200 transition-all cursor-pointer shadow-2xs"
                             >
-                              <span>⏳ Pendiente</span>
+                              <span>Pendiente</span>
                             </button>
                           )}
                         </td>
@@ -1333,7 +1047,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                                     e.stopPropagation();
                                     setSelectedHolderModal(qr);
                                   }}
-                                  className="p-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-[#00A896] transition-colors cursor-pointer"
+                                  className="p-1.5 rounded-lg bg-blue-50 hover:bg-teal-100 text-blue-600 transition-colors cursor-pointer"
                                   title="Ver Ficha Completa del Conductor"
                                 >
                                   <User className="w-4 h-4" />
@@ -1357,9 +1071,11 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedSku(qr.sku);
+                                setPrintExportCount(1);
+                                setShowPrintModal(true);
                               }}
-                              className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-[#532C8C] transition-colors"
-                              title="Ver e imprimir troquel físico"
+                              className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors cursor-pointer"
+                              title="Configurar, previsualizar e imprimir sticker"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
@@ -1425,7 +1141,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                               <button
                                 type="button"
                                 onClick={() => setShowBatchModal(true)}
-                                className="bg-[#00A896] hover:bg-[#008677] active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+                                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
                               >
                                 + Generar Lote Masivo
                               </button>
@@ -1449,7 +1165,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                               <button
                                 type="button"
                                 onClick={() => setShowBatchModal(true)}
-                                className="bg-[#00A896] hover:bg-[#008677] active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+                                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
                               >
                                 + Generar Lote Masivo
                               </button>
@@ -1471,17 +1187,16 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
             </div>
           </div>
         </div>
-      </div>
 
       {/* MODAL 1: Crear QR Individual */}
       {showSingleModal && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowSingleModal(false);
           }}
         >
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative border border-purple-100 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl relative border border-blue-100 animate-in zoom-in-95 duration-200">
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5">
@@ -1497,7 +1212,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 onClick={() => setShowSingleModal(false)}
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -1513,9 +1228,9 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       const rand = Math.floor(1000 + Math.random() * 9000);
                       setSingleSkuInput(`EV${rand}VE`);
                     }}
-                    className="text-[10px] text-[#00A896] hover:underline font-bold"
+                    className="text-[10px] text-blue-600 hover:underline font-bold"
                   >
-                    🎲 Autogenerar
+                    Autogenerar
                   </button>
                 </div>
                 <input
@@ -1523,7 +1238,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                   value={singleSkuInput}
                   onChange={(e) => setSingleSkuInput(e.target.value)}
                   placeholder="Ej. EV8990VE (o dejar vacío para autogenerar)"
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono uppercase font-bold text-slate-900 focus:outline-none focus:border-[#532C8C]"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 uppercase font-bold text-slate-900 focus:outline-none focus:border-blue-600"
                 />
               </div>
 
@@ -1534,7 +1249,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 <select
                   value={singleCategory}
                   onChange={(e) => setSingleCategory(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-[#532C8C]"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-blue-600"
                 >
                   <option value="Auto">Automóvil / Sedán / SUV</option>
                   <option value="Moto">Motocicleta / Casco</option>
@@ -1543,9 +1258,9 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
               </div>
 
               {/* Vista previa de enlace que tendrá */}
-              <div className="bg-purple-50 p-2.5 rounded-xl border border-purple-100 text-purple-900 text-xs">
-                <span className="font-bold block text-[10px] uppercase text-purple-600">Enlace que codificará el sticker:</span>
-                <code className="text-[11px] font-mono break-all mt-0.5 block">
+              <div className="bg-blue-50 p-2.5 rounded-xl border border-blue-100 text-blue-900 text-xs">
+                <span className="font-bold block text-[10px] uppercase text-blue-600">Enlace que codificará el sticker:</span>
+                <code className="text-[11px] break-all mt-0.5 block">
                   {getBaseUrl()}/v/{singleSkuInput.trim().toUpperCase() || 'EVXXXXVE'}
                 </code>
               </div>
@@ -1560,7 +1275,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-[#532C8C] hover:bg-[#432172] active:scale-95 text-white font-extrabold py-2.5 rounded-xl transition-all cursor-pointer shadow-md"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold py-2.5 rounded-xl transition-all cursor-pointer shadow-md"
                 >
                   Crear QR
                 </button>
@@ -1573,28 +1288,22 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
       {/* MODAL 2: Crear Lote Masivo */}
       {showBatchModal && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowBatchModal(false);
           }}
         >
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative border border-purple-100 animate-in zoom-in-95 duration-200">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-[#00A896]" />
-                  Generar Lote Masivo de QRs
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Crea secuencias consecutivas de códigos para imprimir en pliegos de stickers físicos.
-                </p>
-              </div>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl relative border border-blue-100 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-base text-slate-900">
+                Generar Lote Masivo de QRs
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowBatchModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -1602,39 +1311,26 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
               <div className="flex flex-col gap-1.5 text-left">
                 <label className="font-bold text-slate-700 uppercase tracking-wider text-[11px] flex items-center justify-between">
                   <span>Cantidad de Stickers a Generar</span>
-                  <span className="font-mono text-purple-700 font-extrabold text-xs">
-                    {batchCount} {Number(batchCount) === 1 ? 'sticker' : 'stickers'}
+                  <span className="text-blue-700 font-bold text-xs">
+                    {Number(batchCount) || 1} {Number(batchCount) === 1 ? 'sticker' : 'stickers'}
                   </span>
                 </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="1"
-                    max="1000"
-                    required
-                    value={batchCount}
-                    onChange={(e) => setBatchCount(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-extrabold text-base text-slate-900 focus:outline-none focus:border-[#532C8C] w-24 text-center"
-                  />
-                  <div className="flex flex-wrap items-center gap-1 flex-1">
-                    {[1, 2, 3, 5, 10, 25, 50, 100].map(qty => (
-                      <button
-                        key={qty}
-                        type="button"
-                        onClick={() => setBatchCount(qty)}
-                        className={`px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                          Number(batchCount) === qty
-                            ? 'bg-[#532C8C] text-white shadow-xs'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                        }`}
-                      >
-                        {qty}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <input
+                  type="number"
+                  min="1"
+                  max="1000"
+                  required
+                  value={batchCount}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setBatchCount(raw === '' ? '' : Math.max(1, Math.min(1000, parseInt(raw, 10) || 1)));
+                  }}
+                  onBlur={() => setBatchCount((prev) => Math.max(1, Math.min(1000, parseInt(prev, 10) || 1)))}
+                  placeholder="Ingresa la cantidad (1 - 1000)"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 font-bold text-sm text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all w-full"
+                />
                 <span className="text-[10px] text-slate-400">
-                  Elige la cantidad exacta para la imprenta (1, 2, 3 o cualquier número personalizado).
+                  Ingresa manualmente la cantidad exacta para la imprenta (máximo 1000 por lote).
                 </span>
               </div>
 
@@ -1649,9 +1345,9 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                     value={batchPrefix}
                     onChange={(e) => setBatchPrefix(e.target.value)}
                     placeholder="EV"
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono uppercase font-bold text-slate-900 focus:outline-none focus:border-[#532C8C] w-24 text-center"
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 uppercase font-bold text-slate-900 focus:outline-none focus:border-blue-600 w-24 text-center"
                   />
-                  <div className="flex-1 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2 text-[11px] font-mono text-purple-900 font-bold truncate">
+                  <div className="flex-1 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-[11px] text-blue-900 font-bold truncate">
                     Vista previa: {batchPrefix === 'EV' ? 'EV####VE (ej. EV3362VE)' : `${batchPrefix}0001`}
                   </div>
                 </div>
@@ -1667,12 +1363,29 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 <select
                   value={batchCategory}
                   onChange={(e) => setBatchCategory(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-[#532C8C]"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-blue-600"
                 >
                   <option value="Auto">Automóvil / SUV / Camioneta</option>
                   <option value="Moto">Motocicleta / Casco</option>
                   <option value="Camión">Carga Pesada / Autobús</option>
                 </select>
+              </div>
+
+              <div className="flex flex-col gap-1 text-left">
+                <label className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
+                  Descripción del Lote
+                </label>
+                <textarea
+                  rows="2"
+                  maxLength={180}
+                  value={batchDescription}
+                  onChange={(e) => setBatchDescription(e.target.value)}
+                  placeholder="Ej. Entrega para concesionario Norte, flota de motos o reposición mensual..."
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-600 focus:bg-white transition-all resize-none"
+                />
+                <span className="text-[10px] text-slate-400">
+                  Permite identificar el motivo de creación y hacer seguimiento en el catálogo.
+                </span>
               </div>
 
               <div className="pt-2 flex items-center gap-2">
@@ -1685,7 +1398,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-[#00A896] hover:bg-[#008677] active:scale-95 text-white font-extrabold py-2.5 rounded-xl transition-all cursor-pointer shadow-md"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold py-2.5 rounded-xl transition-all cursor-pointer shadow-md"
                 >
                   Crear e Incorporar
                 </button>
@@ -1695,619 +1408,660 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
         </div>
       )}
 
-      {/* MODAL NUEVO: Configuración y Salida para Imprenta */}
+      {/* MODAL UNIFICADO: Imprimir (Configuración de Plantilla + Vista Previa + Exportación) */}
       {showPrintModal && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowPrintModal(false);
           }}
         >
-          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl relative border border-purple-100 animate-in zoom-in-95 duration-200 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-purple-50 text-[#532C8C] flex items-center justify-center shrink-0 border border-purple-100">
-                  <Printer className="w-5 h-5 text-[#532C8C]" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5">
-                    Configuración de Salida para Imprenta
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Personaliza los vectores de corte, número de lote y cantidad a exportar.
-                  </p>
-                </div>
-              </div>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-5xl shadow-2xl relative border border-slate-200/90 animate-in zoom-in-95 duration-200 flex flex-col gap-5 max-h-[92vh] overflow-y-auto">
+            {/* Header Modal limpio sin icono ni subtítulo */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <h3 className="font-bold text-base text-slate-900">
+                Imprimir
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowPrintModal(false)}
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* SECCIÓN 1: VECTORES DE CORTE */}
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5 uppercase tracking-wide">
-                  <Scissors className="w-3.5 h-3.5 text-[#F0047F]" />
-                  Vectores de Corte Plotter (Líneas Fucsia #F0047F)
-                </span>
-                <span className="text-[10px] font-mono bg-pink-50 text-[#F0047F] px-2 py-0.5 rounded font-bold border border-pink-200">
-                  Plotter
-                </span>
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              {/* COLUMNA IZQUIERDA: Vista Previa en Vivo sin bordes blancos laterales */}
+              <div className="lg:col-span-5 flex flex-col gap-3">
+                <div className="bg-slate-50/70 rounded-2xl p-4 border border-slate-200 flex flex-col items-center">
+                  <div className="w-full flex items-center justify-between gap-2 pb-3">
+                    <span className="text-[11px] font-bold uppercase text-blue-600 tracking-wider">
+                      Vista Previa en Vivo
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10.5px] font-semibold text-slate-600 bg-white border border-slate-200 px-2 py-0.5 rounded-full">
+                        {formatTemplateMeasure(printConfig.templateWidthMm, templateUnit)} × {formatTemplateMeasure(printConfig.templateHeightMm, templateUnit)} {templateUnit}
+                      </span>
+                      <span className={`text-[10.5px] font-semibold px-2 py-0.5 rounded-full border ${
+                        printConfig.includeQr
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}>
+                        {printConfig.includeQr ? 'Con QR' : 'Sin QR'}
+                      </span>
+                    </div>
+                  </div>
 
-              {/* Switch 1: Corte Externo */}
-              <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200/80">
-                <div className="flex flex-col">
-                  <span className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
-                    <span className={`w-2.5 h-2.5 rounded-full ${printConfig.cutExternal ? 'bg-[#F0047F]' : 'bg-slate-300'}`} />
-                    Vector de Corte Externo
-                  </span>
-                  <span className="text-[11px] text-slate-500 mt-0.5">
-                    Línea perimetral exterior que delimita la lámina completa (45 × 130 mm).
-                  </span>
+                  {/* Contenedor limpio de vista previa proporcional al tamaño configurado */}
+                  <div className="w-full bg-slate-100/90 rounded-2xl border border-slate-200/90 p-4 flex items-center justify-center min-h-[430px]">
+                    <canvas
+                      ref={canvasRef}
+                      style={{
+                        width: `${previewCanvasCssW}px`,
+                        height: `${previewCanvasCssH}px`,
+                      }}
+                      className="block shadow-md transition-all duration-200"
+                    />
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setPrintConfig(prev => ({ ...prev, cutExternal: !prev.cutExternal }))}
-                  className={`w-12 h-6.5 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ml-3 ${
-                    printConfig.cutExternal ? 'bg-[#F0047F]' : 'bg-slate-300'
-                  }`}
-                >
-                  <div className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-transform ${
-                    printConfig.cutExternal ? 'translate-x-5.5' : 'translate-x-0'
-                  }`} />
-                </button>
               </div>
 
-              {/* Switch 2: Cortes Internos */}
-              <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200/80">
-                <div className="flex flex-col">
-                  <span className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
-                    <span className={`w-2.5 h-2.5 rounded-full ${printConfig.cutInternal ? 'bg-[#F0047F]' : 'bg-slate-300'}`} />
-                    Vectores de Corte Internos
-                  </span>
-                  <span className="text-[11px] text-slate-500 mt-0.5">
-                    Troqueles interiores del sticker pequeño superior y el sticker grande inferior.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPrintConfig(prev => ({ ...prev, cutInternal: !prev.cutInternal }))}
-                  className={`w-12 h-6.5 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ml-3 ${
-                    printConfig.cutInternal ? 'bg-[#F0047F]' : 'bg-slate-300'
-                  }`}
-                >
-                  <div className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-transform ${
-                    printConfig.cutInternal ? 'translate-x-5.5' : 'translate-x-0'
-                  }`} />
-                </button>
-              </div>
-            </div>
+              {/* COLUMNA DERECHA: Configuraciones de la Plantilla + Exportación */}
+              <div className="lg:col-span-7 flex flex-col gap-4">
+                {/* SECCIÓN 1: CONFIGURACIÓN DE PLANTILLA EN VIVO */}
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="font-bold text-slate-800 text-xs uppercase tracking-wide">
+                      Configuración de la Plantilla
+                    </span>
+                    <span className="text-[10px] bg-pink-50 text-[#EC008C] px-2 py-0.5 rounded font-bold border border-pink-200">
+                      CutContour · CMYK (0,100,0,0)
+                    </span>
+                  </div>
 
-            {/* SECCIÓN 2: NÚMERO DE LOTE */}
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5 uppercase tracking-wide">
-                  <Tag className="w-3.5 h-3.5 text-[#532C8C]" />
-                  Rotulación de Número de Lote Lateral
-                </span>
-                <span className="text-[10px] font-mono bg-purple-50 text-[#532C8C] px-2 py-0.5 rounded font-bold border border-purple-200">
-                  {printConfig.showBatchCode ? 'Activo' : 'Desactivado'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200/80">
-                <div className="flex flex-col">
-                  <span className="font-extrabold text-slate-900 text-xs">
-                    Incluir Número de Lote
-                  </span>
-                  <span className="text-[11px] text-slate-500 mt-0.5">
-                    Imprime el código vertical en el margen lateral del sticker.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPrintConfig(prev => ({ ...prev, showBatchCode: !prev.showBatchCode }))}
-                  className={`w-12 h-6.5 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ml-3 ${
-                    printConfig.showBatchCode ? 'bg-[#532C8C]' : 'bg-slate-300'
-                  }`}
-                >
-                  <div className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-transform ${
-                    printConfig.showBatchCode ? 'translate-x-5.5' : 'translate-x-0'
-                  }`} />
-                </button>
-              </div>
-
-              {printConfig.showBatchCode && (
-                <div className="flex flex-col gap-1 text-left bg-white p-3 rounded-xl border border-slate-200/80">
-                  <label className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
-                    Texto Personalizado del Lote
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={15}
-                    value={printConfig.batchCodeText}
-                    onChange={(e) => setPrintConfig(prev => ({ ...prev, batchCodeText: e.target.value.toUpperCase() }))}
-                    placeholder="Ej. L1C o LOTE-01"
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono uppercase font-bold text-slate-900 focus:outline-none focus:border-[#532C8C]"
-                  />
-                  <span className="text-[10px] text-slate-400">
-                    Se imprimirá verticalmente en el sticker (reemplazando "L1C0").
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* SECCIÓN 3: CANTIDAD A IMPRIMIR / EXPORTAR */}
-            <div className="bg-purple-50/70 rounded-2xl p-4 border border-purple-200 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-[#532C8C] text-xs flex items-center gap-1.5 uppercase tracking-wide">
-                  <Layers className="w-3.5 h-3.5 text-[#00A896]" />
-                  Cantidad de Stickers a Imprimir
-                </span>
-                <span className="text-xs font-mono font-extrabold text-[#532C8C] bg-white px-2 py-0.5 rounded-lg border border-purple-200">
-                  {printExportCount} de {printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted).length : filteredQrs.length} disponibles
-                </span>
-              </div>
-
-              {/* Selector Rápido: Pendientes vs Todos */}
-              <div className="flex items-center gap-2 bg-purple-100/60 p-1 rounded-xl text-xs font-bold">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPrintOnlyPendingInBatch(true);
-                    const pCount = filteredQrs.filter(q => !q.isPrinted).length;
-                    setPrintExportCount(Math.min(15, Math.max(1, pCount)));
-                  }}
-                  className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer text-xs ${
-                    printOnlyPendingInBatch ? 'bg-amber-500 text-white font-black shadow-xs' : 'text-purple-900 hover:bg-white/50'
-                  }`}
-                >
-                  ⏳ Solo Pendientes ({pendingPrintCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPrintOnlyPendingInBatch(false);
-                    setPrintExportCount(Math.min(15, Math.max(1, filteredQrs.length)));
-                  }}
-                  className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer text-xs ${
-                    !printOnlyPendingInBatch ? 'bg-[#532C8C] text-white font-black shadow-xs' : 'text-purple-900 hover:bg-white/50'
-                  }`}
-                >
-                  📁 Todos ({filteredQrs.length})
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  max={Math.max(1, printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted).length : filteredQrs.length)}
-                  value={printExportCount}
-                  onChange={(e) => {
-                    const maxAllowed = printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted).length : filteredQrs.length;
-                    setPrintExportCount(Math.min(Math.max(1, maxAllowed), Math.max(1, parseInt(e.target.value) || 1)));
-                  }}
-                  className="bg-white border border-purple-200 rounded-xl px-3 py-2 font-mono font-extrabold text-base text-purple-900 focus:outline-none focus:border-[#532C8C] w-24 text-center shadow-xs"
-                />
-                <div className="flex flex-wrap items-center gap-1.5 flex-1">
-                  {(() => {
-                    const maxQty = printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted).length : filteredQrs.length;
-                    return [1, 2, 3, 5, 10, 15, 30, maxQty].filter((v, idx, arr) => v > 0 && v <= maxQty && arr.indexOf(v) === idx).map(qty => (
+                  {/* Opción Con QR / Sin QR */}
+                  <div className="bg-white p-1.5 rounded-xl border border-slate-200/80">
+                    <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl">
                       <button
-                        key={qty}
                         type="button"
-                        onClick={() => setPrintExportCount(qty)}
-                        className={`px-2.5 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                          Number(printExportCount) === qty
-                            ? 'bg-[#532C8C] text-white shadow-xs'
-                            : 'bg-white hover:bg-purple-100 text-[#532C8C] border border-purple-200'
+                        onClick={() => setPrintConfig(prev => ({ ...prev, includeQr: true }))}
+                        className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          printConfig.includeQr
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        {qty === maxQty ? `Todos (${qty})` : qty === 15 ? '15 (1 Pliego A3)' : qty}
+                        Con QR y Código
                       </button>
-                    ));
-                  })()}
+                      <button
+                        type="button"
+                        onClick={() => setPrintConfig(prev => ({ ...prev, includeQr: false }))}
+                        className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          !printConfig.includeQr
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Sin QR (Solo Plantilla)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tamaño Configurable de la Plantilla (Proporción 45:130) */}
+                  <div className="bg-white p-3 rounded-xl border border-slate-200/80 flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="font-bold text-slate-900 text-xs">
+                        Tamaño de la Plantilla
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleResetTemplateSize}
+                        className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+                      >
+                        Restablecer (45 × 130 mm)
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 focus-within:border-blue-600 focus-within:bg-white rounded-xl px-2.5 py-1.5 transition-all">
+                        <span className="text-[11px] font-semibold text-slate-500">Ancho</span>
+                        <input
+                          type="number"
+                          step="any"
+                          min={templateUnit === 'cm' ? 1.5 : 15}
+                          max={templateUnit === 'cm' ? 30 : 300}
+                          value={templateWidthInput}
+                          onChange={(e) => handleTemplateWidthChange(e.target.value)}
+                          onBlur={() => setTemplateWidthInput(formatTemplateMeasure(printConfig.templateWidthMm, templateUnit))}
+                          className="w-16 text-xs font-bold text-slate-900 bg-transparent outline-none text-center"
+                        />
+                        <span className="text-[11px] font-semibold text-slate-400">{templateUnit}</span>
+                      </div>
+
+                      <span className="text-xs font-bold text-slate-400">×</span>
+
+                      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 focus-within:border-blue-600 focus-within:bg-white rounded-xl px-2.5 py-1.5 transition-all">
+                        <span className="text-[11px] font-semibold text-slate-500">Alto</span>
+                        <input
+                          type="number"
+                          step="any"
+                          min={templateUnit === 'cm' ? 4 : 40}
+                          max={templateUnit === 'cm' ? 90 : 900}
+                          value={templateHeightInput}
+                          onChange={(e) => handleTemplateHeightChange(e.target.value)}
+                          onBlur={() => setTemplateHeightInput(formatTemplateMeasure(printConfig.templateHeightMm, templateUnit))}
+                          className="w-16 text-xs font-bold text-slate-900 bg-transparent outline-none text-center"
+                        />
+                        <span className="text-[11px] font-semibold text-slate-400">{templateUnit}</span>
+                      </div>
+
+                      <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button
+                          type="button"
+                          onClick={() => handleTemplateUnitChange('mm')}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                            templateUnit === 'mm' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          mm
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTemplateUnitChange('cm')}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                            templateUnit === 'cm' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          cm
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Vectores de Corte Externo e Interno lado a lado en 1 fila */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200/80">
+                      <span className="font-bold text-slate-900 text-xs">
+                        Vector de Corte Externo
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPrintConfig(prev => ({ ...prev, cutExternal: !prev.cutExternal }))}
+                        className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ml-2 ${
+                          printConfig.cutExternal ? 'bg-[#EC008C]' : 'bg-slate-300'
+                        }`}
+                      >
+                        <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
+                          printConfig.cutExternal ? 'translate-x-5' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200/80">
+                      <span className="font-bold text-slate-900 text-xs">
+                        Vector de Corte Interno
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPrintConfig(prev => ({ ...prev, cutInternal: !prev.cutInternal }))}
+                        className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ml-2 ${
+                          printConfig.cutInternal ? 'bg-[#EC008C]' : 'bg-slate-300'
+                        }`}
+                      >
+                        <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
+                          printConfig.cutInternal ? 'translate-x-5' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Número de Lote Lateral + Texto del Lote en una sola fila */}
+                  <div className="bg-white p-3 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center justify-between gap-3 shrink-0">
+                      <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-blue-600" />
+                        Incluir Número de Lote Lateral
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPrintConfig(prev => ({ ...prev, showBatchCode: !prev.showBatchCode }))}
+                        className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                          printConfig.showBatchCode ? 'bg-blue-600' : 'bg-slate-300'
+                        }`}
+                      >
+                        <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
+                          printConfig.showBatchCode ? 'translate-x-5' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
+
+                    <div className={`flex items-center gap-2 flex-1 min-w-[160px] transition-opacity ${
+                      printConfig.showBatchCode ? 'opacity-100' : 'opacity-45'
+                    }`}>
+                      <label className="font-bold text-slate-600 uppercase tracking-wider text-[10.5px] shrink-0">
+                        Texto:
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={15}
+                        disabled={!printConfig.showBatchCode}
+                        value={printConfig.batchCodeText}
+                        onChange={(e) => setPrintConfig(prev => ({ ...prev, batchCodeText: e.target.value.toUpperCase() }))}
+                        placeholder="Ej. L1C"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 uppercase font-bold text-slate-900 text-xs focus:outline-none focus:border-blue-600 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECCIÓN 2: EXPORTACIÓN POR LOTE (Multiformato, Comprimido/Individual y Lienzo Expandible) */}
+                <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-200 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="font-bold text-blue-700 text-xs uppercase tracking-wide">
+                      {printConfig.includeQr ? 'Exportación por Lote' : 'Exportación de Plantilla (Sin QR)'}
+                    </span>
+                  </div>
+
+                  {printConfig.includeQr ? (
+                    <>
+                      {/* Selector Rápido: Pendientes vs Todos */}
+                      <div className="flex items-center gap-2 bg-white p-1 rounded-xl text-xs font-bold border border-blue-200/80">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPrintOnlyPendingInBatch(true);
+                            const pCount = filteredQrs.filter(q => !q.isPrinted).length;
+                            setPrintExportCount(Math.min(15, Math.max(1, pCount)));
+                          }}
+                          className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer text-xs ${
+                            printOnlyPendingInBatch ? 'bg-amber-500 text-white font-extrabold shadow-xs' : 'text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          Solo Pendientes ({pendingPrintCount})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPrintOnlyPendingInBatch(false);
+                            setPrintExportCount(Math.min(15, Math.max(1, filteredQrs.length)));
+                          }}
+                          className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer text-xs ${
+                            !printOnlyPendingInBatch ? 'bg-blue-600 text-white font-extrabold shadow-xs' : 'text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          Todos ({filteredQrs.length})
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <input
+                          type="number"
+                          min="1"
+                          max={Math.max(1, printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted).length : filteredQrs.length)}
+                          value={printExportCount}
+                          onChange={(e) => {
+                            const maxAllowed = printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted).length : filteredQrs.length;
+                            setPrintExportCount(Math.min(Math.max(1, maxAllowed), Math.max(1, parseInt(e.target.value, 10) || 1)));
+                          }}
+                          className="bg-white border border-blue-200 rounded-xl px-3 py-2 font-bold text-sm text-slate-900 focus:outline-none focus:border-blue-600 w-24 text-center shadow-xs"
+                        />
+                        <div className="flex flex-wrap items-center gap-1.5 flex-1">
+                          {(() => {
+                            const maxQty = printOnlyPendingInBatch ? filteredQrs.filter(q => !q.isPrinted).length : filteredQrs.length;
+                            return [1, 2, 3, 5, 10, 15, 30, maxQty].filter((v, idx, arr) => v > 0 && v <= maxQty && arr.indexOf(v) === idx).map(qty => (
+                              <button
+                                key={qty}
+                                type="button"
+                                onClick={() => setPrintExportCount(qty)}
+                                className={`px-2.5 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                                  Number(printExportCount) === qty
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'bg-white hover:bg-blue-50 text-blue-600 border border-blue-200'
+                                }`}
+                              >
+                                {qty === maxQty ? `Todos (${qty})` : qty}
+                              </button>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-blue-200/80">
+                      <span className="text-xs font-semibold text-slate-700">
+                        Cantidad de plantillas base (copias):
+                      </span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="500"
+                        value={printExportCount}
+                        onChange={(e) => setPrintExportCount(Math.min(500, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 font-bold text-sm text-slate-900 focus:outline-none focus:border-blue-600 w-24 text-center"
+                      />
+                    </div>
+                  )}
+
+                  {/* Selector de Formato (JPG, SVG, PDF, PNG) */}
+                  <div className="bg-white p-3 rounded-xl border border-blue-200/80 flex flex-col gap-2">
+                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                      Formato de Exportación
+                    </span>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {['jpg', 'svg', 'pdf', 'png'].map((fmt) => (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => setBatchExportFormat(fmt)}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer border ${
+                            batchExportFormat === fmt
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {fmt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Modo de Entrega: Comprimido (.zip / RAR) o Individuales */}
+                  <div className="bg-white p-3 rounded-xl border border-blue-200/80 flex flex-col gap-2">
+                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                      Modo de Descarga
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setBatchDeliveryMode('zip')}
+                        title="Empaqueta todos los archivos en un solo comprimido (.zip compatible con WinRAR)"
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          batchDeliveryMode === 'zip'
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <Archive className="w-3.5 h-3.5" />
+                        <span>Comprimido (ZIP / RAR)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBatchDeliveryMode('individual')}
+                        title="Descarga cada archivo por separado uno a uno"
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          batchDeliveryMode === 'individual'
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Todos Individuales</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* BOTÓN PRINCIPAL DE DESCARGA POR LOTE + DESPLEGABLE DE LIENZO */}
+                  <div className="pt-1 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      disabled={isExporting}
+                      onClick={() => handleExportBatchByFormat(printExportCount)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold py-3 px-3 rounded-xl transition-all cursor-pointer shadow-sm text-xs flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {batchDeliveryMode === 'zip' ? (
+                        <Archive className="w-4 h-4" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
+                      <span>
+                        {isExporting
+                          ? 'Generando exportación...'
+                          : `Descargar ${printExportCount} ${batchExportFormat.toUpperCase()} (${batchDeliveryMode === 'zip' ? 'Comprimido' : 'Individuales'})`}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCanvasRollPanel(prev => !prev)}
+                      className="w-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-between gap-2 transition-all cursor-pointer"
+                      title="Expandir configuración de lienzo o bobina para plotter"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Scissors className="w-4 h-4 text-amber-700" />
+                        <span>Exportar por Lienzo / Bobina CMYK</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="bg-amber-200/80 text-amber-900 text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase">
+                          Plotter
+                        </span>
+                        {showCanvasRollPanel ? (
+                          <ChevronUp className="w-4 h-4 text-amber-800" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-amber-800" />
+                        )}
+                      </span>
+                    </button>
+
+                    {/* PANEL EXPANDIBLE INLINE: Lienzo / Bobina CMYK */}
+                    {showCanvasRollPanel && (
+                      <div className="mt-1 pt-3 border-t border-blue-200/80 flex flex-col gap-3 animate-in fade-in duration-200">
+                        {/* Medidas de Bobina y Espaciado */}
+                        <div className="bg-white rounded-xl p-3.5 border border-slate-200 flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-slate-800">
+                              Ancho del Lienzo / Bobina:
+                            </label>
+                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                              {canvasConfig.canvasWidthMm ? `${canvasConfig.canvasWidthMm} mm (${(canvasConfig.canvasWidthMm / 10).toFixed(1)} cm)` : '—'}
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="50"
+                              max="10000"
+                              step="1"
+                              placeholder="Ej: 1000 (para 1 metro)"
+                              value={canvasConfig.canvasWidthMm ?? ''}
+                              onChange={(e) => {
+                                const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                                setCanvasConfig(prev => ({ ...prev, canvasWidthMm: val }));
+                              }}
+                              onBlur={() => {
+                                if (!canvasConfig.canvasWidthMm || canvasConfig.canvasWidthMm < 50) {
+                                  setCanvasConfig(prev => ({ ...prev, canvasWidthMm: 1000 }));
+                                }
+                              }}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 font-bold text-sm text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all text-center"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
+                              mm
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                              <label className="text-[10.5px] font-bold text-slate-600 block mb-1">
+                                Sep. Horizontal:
+                              </label>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={canvasConfig.gapXMm ?? ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                                    setCanvasConfig(prev => ({ ...prev, gapXMm: val }));
+                                  }}
+                                  onBlur={() => {
+                                    if (canvasConfig.gapXMm === '') setCanvasConfig(prev => ({ ...prev, gapXMm: 0 }));
+                                  }}
+                                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 font-bold text-xs text-center"
+                                />
+                                <span className="text-[10.5px] text-slate-400 font-bold">mm</span>
+                              </div>
+                            </div>
+
+                            <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                              <label className="text-[10.5px] font-bold text-slate-600 block mb-1">
+                                Sep. Vertical:
+                              </label>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={canvasConfig.gapYMm ?? ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                                    setCanvasConfig(prev => ({ ...prev, gapYMm: val }));
+                                  }}
+                                  onBlur={() => {
+                                    if (canvasConfig.gapYMm === '') setCanvasConfig(prev => ({ ...prev, gapYMm: 0 }));
+                                  }}
+                                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 font-bold text-xs text-center"
+                                />
+                                <span className="text-[10.5px] text-slate-400 font-bold">mm</span>
+                              </div>
+                            </div>
+
+                            <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                              <label className="text-[10.5px] font-bold text-slate-600 block mb-1">
+                                Margen Pinzas:
+                              </label>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={canvasConfig.marginMm ?? ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                                    setCanvasConfig(prev => ({ ...prev, marginMm: val }));
+                                  }}
+                                  onBlur={() => {
+                                    if (canvasConfig.marginMm === '') setCanvasConfig(prev => ({ ...prev, marginMm: 0 }));
+                                  }}
+                                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 font-bold text-xs text-center"
+                                />
+                                <span className="text-[10.5px] text-slate-400 font-bold">mm</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-3 pt-1">
+                            <span className="text-xs font-bold text-slate-800">
+                              Cantidad de Filas:
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                min="1"
+                                max="500"
+                                step="1"
+                                value={canvasConfig.targetRows ?? ''}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                                  setCanvasConfig(prev => ({ ...prev, targetRows: val }));
+                                }}
+                                onBlur={() => {
+                                  if (!canvasConfig.targetRows || canvasConfig.targetRows < 1) {
+                                    setCanvasConfig(prev => ({ ...prev, targetRows: 1 }));
+                                  }
+                                }}
+                                className="w-20 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold text-xs text-slate-900 text-center focus:outline-none focus:border-blue-600"
+                              />
+                              <span className="text-xs font-semibold text-slate-400">filas</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Cálculo en Vivo para Plotter */}
+                        {(() => {
+                          const layout = calculateCanvasRollLayout(canvasConfig, printConfig);
+                          return (
+                            <div className="bg-white text-slate-800 rounded-xl p-3 flex flex-col gap-2.5 border border-slate-200/90 shadow-2xs">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="font-bold uppercase tracking-wider text-blue-600">
+                                  Resumen de Bobina
+                                </span>
+                                <span className="text-slate-500 font-semibold">
+                                  {layout.stickerWidth} × {layout.stickerHeight} mm
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-4 gap-1.5 text-center">
+                                <div className="bg-slate-50 rounded-lg p-1.5 border border-slate-200/80">
+                                  <span className="text-[9.5px] font-semibold text-slate-500 uppercase block">Por Fila</span>
+                                  <strong className="text-sm font-bold text-slate-900">{layout.cols}</strong>
+                                </div>
+                                <div className="bg-slate-50 rounded-lg p-1.5 border border-slate-200/80">
+                                  <span className="text-[9.5px] font-semibold text-slate-500 uppercase block">Filas</span>
+                                  <strong className="text-sm font-bold text-slate-900">{layout.rows}</strong>
+                                </div>
+                                <div className="bg-blue-50/80 rounded-lg p-1.5 border border-blue-200">
+                                  <span className="text-[9.5px] font-semibold text-blue-600 uppercase block">Total</span>
+                                  <strong className="text-sm font-bold text-blue-700">{layout.totalStickers}</strong>
+                                </div>
+                                <div className="bg-slate-50 rounded-lg p-1.5 border border-slate-200/80">
+                                  <span className="text-[9.5px] font-semibold text-slate-500 uppercase block">Largo</span>
+                                  <strong className="text-sm font-bold text-slate-900">{layout.linearMeters} m</strong>
+                                </div>
+                              </div>
+
+                              <div className="text-[11px] text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1.5 rounded-lg flex items-center justify-between">
+                                <span className="font-medium">Tamaño del lienzo:</span>
+                                <strong className="text-slate-900 font-bold">
+                                  {layout.canvasWidthMm} mm × {Math.round(layout.canvasHeightMm)} mm
+                                </strong>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Descargas del Lienzo / Bobina CMYK */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            disabled={isExporting}
+                            onClick={handleExportCanvasPdf}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl transition-all cursor-pointer shadow-xs text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Descargar Lienzo PDF CMYK</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={isExporting}
+                            onClick={handleExportCanvasSvg}
+                            className="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 font-bold py-2.5 px-3 rounded-xl transition-all cursor-pointer shadow-xs text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          >
+                            <Download className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Descargar Lienzo SVG CMYK</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              <span className="text-[10px] text-purple-700/80">
-                Se exportarán {printExportCount} stickers {printOnlyPendingInBatch ? 'pendientes de imprenta' : 'del catálogo'}. Al descargarse, se marcarán automáticamente como ✅ Impresos.
-              </span>
-            </div>
-
-            {/* BOTONES DE EXPORTACIÓN */}
-            <div className="pt-2 flex flex-col gap-2">
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={async () => {
-                  setShowPrintModal(false);
-                  await handleExportJpgZip(printExportCount);
-                }}
-                className="w-full bg-[#00A896] hover:bg-[#008677] active:scale-95 text-white font-extrabold py-3 px-3 rounded-xl transition-all cursor-pointer shadow-md text-xs flex items-center justify-center gap-2"
-              >
-                <ImageIcon className="w-4 h-4" />
-                <span>Descargar Lote JPGs Separados a 300 ppp ({printExportCount} archivos)</span>
-              </button>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  disabled={isExporting}
-                  onClick={async () => {
-                    setShowPrintModal(false);
-                    await handleExportZip(printExportCount);
-                  }}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-2.5 px-3 rounded-xl transition-all cursor-pointer shadow-md text-xs flex items-center justify-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5 text-teal-300" />
-                  <span>Lote SVGs Plotter ({printExportCount})</span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={isExporting}
-                  onClick={async () => {
-                    setShowPrintModal(false);
-                    await handleExportPliegoPdf(printExportCount);
-                  }}
-                  className="w-full bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-extrabold py-2.5 px-3 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5"
-                >
-                  <FileText className="w-3.5 h-3.5 text-purple-700" />
-                  <span>Pliego A3 PDF ({printExportCount})</span>
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowPrintModal(false)}
-                className="w-full mt-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl transition-all cursor-pointer text-xs"
-              >
-                Cerrar
-              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL 4: Exportación por Lienzo / Bobina CMYK para Plotter de Corte */}
-      {showCanvasRollModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowCanvasRollModal(false);
-          }}
-        >
-          <div className="bg-white rounded-3xl p-6 w-full max-w-xl shadow-2xl relative border border-purple-100 animate-in zoom-in-95 duration-200 flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
-            {/* Header del Modal */}
-            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
-                  <Scissors className="w-6 h-6 text-amber-600" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-extrabold text-base text-slate-900">
-                      Lienzo por Bobina (Plotter CMYK)
-                    </h3>
-                    <span className="bg-pink-100 text-[#FF00FF] font-black text-[10px] px-2 py-0.5 rounded-full border border-pink-300">
-                      CMYK Puro
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Ajuste automático a lo ancho de la bobina con separación milimétrica y filas completas.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCanvasRollModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* SECCIÓN 1: MEDIDAS DEL LIENZO Y ESPACIADO (MANUAL Y PERSONALIZADO) */}
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col gap-3">
-              <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5 uppercase tracking-wide">
-                <Layers className="w-3.5 h-3.5 text-[#532C8C]" />
-                1. Dimensiones de Bobina y Espaciado (Manual)
-              </span>
-
-              {/* Ancho del Lienzo Manual */}
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-extrabold text-slate-800">
-                    Ancho del Lienzo / Bobina:
-                  </label>
-                  <span className="text-xs font-mono font-black text-[#532C8C] bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100">
-                    {canvasConfig.canvasWidthMm ? `${canvasConfig.canvasWidthMm} mm (${(canvasConfig.canvasWidthMm / 10).toFixed(1)} cm)` : '—'}
-                  </span>
-                </div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="50"
-                    max="10000"
-                    step="1"
-                    placeholder="Ej: 1000 (para 1 metro)"
-                    value={canvasConfig.canvasWidthMm ?? ''}
-                    onChange={(e) => {
-                      const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
-                      setCanvasConfig(prev => ({ ...prev, canvasWidthMm: val }));
-                    }}
-                    onBlur={() => {
-                      if (!canvasConfig.canvasWidthMm || canvasConfig.canvasWidthMm < 50) {
-                        setCanvasConfig(prev => ({ ...prev, canvasWidthMm: 1000 }));
-                      }
-                    }}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 font-mono font-black text-base text-slate-900 focus:outline-none focus:border-[#532C8C] focus:bg-white transition-all text-center"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
-                    mm
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 mt-1.5">
-                  Escribe los milímetros exactos del ancho de tu bobina o mesa de corte (ej. 1000 mm = 100 cm).
-                </p>
-              </div>
-
-              {/* Separaciones y Margen Manuales */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-                <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-                  <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                    Separación Horizontal:
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={canvasConfig.gapXMm ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
-                        setCanvasConfig(prev => ({ ...prev, gapXMm: val }));
-                      }}
-                      onBlur={() => {
-                        if (canvasConfig.gapXMm === '') setCanvasConfig(prev => ({ ...prev, gapXMm: 0 }));
-                      }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-mono font-bold text-xs text-center"
-                    />
-                    <span className="text-[11px] text-slate-400 font-bold">mm</span>
-                  </div>
-                </div>
-
-                <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-                  <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                    Separación Vertical:
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={canvasConfig.gapYMm ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
-                        setCanvasConfig(prev => ({ ...prev, gapYMm: val }));
-                      }}
-                      onBlur={() => {
-                        if (canvasConfig.gapYMm === '') setCanvasConfig(prev => ({ ...prev, gapYMm: 0 }));
-                      }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-mono font-bold text-xs text-center"
-                    />
-                    <span className="text-[11px] text-slate-400 font-bold">mm</span>
-                  </div>
-                </div>
-
-                <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-                  <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                    Margen de Pinzas:
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={canvasConfig.marginMm ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
-                        setCanvasConfig(prev => ({ ...prev, marginMm: val }));
-                      }}
-                      onBlur={() => {
-                        if (canvasConfig.marginMm === '') setCanvasConfig(prev => ({ ...prev, marginMm: 0 }));
-                      }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-mono font-bold text-xs text-center"
-                    />
-                    <span className="text-[11px] text-slate-400 font-bold">mm</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* SECCIÓN 2: CANTIDAD DE FILAS (MANUAL Y PERSONALIZADO) */}
-            <div className="bg-purple-50/60 rounded-2xl p-4 border border-purple-200 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-[#532C8C] text-xs flex items-center gap-1.5 uppercase tracking-wide">
-                  <Tag className="w-3.5 h-3.5 text-[#00A896]" />
-                  2. Cantidad de Filas (Manual)
-                </span>
-                <span className="text-xs font-mono font-black text-[#532C8C] bg-white px-2.5 py-0.5 rounded-lg border border-purple-200">
-                  {canvasConfig.targetRows || 1} {canvasConfig.targetRows === 1 ? 'fila' : 'filas'}
-                </span>
-              </div>
-
-              <div className="bg-white p-3.5 rounded-xl border border-purple-200">
-                <label className="text-xs font-extrabold text-slate-800 block mb-2">
-                  Escribe la cantidad exacta de filas a exportar:
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="1"
-                    max="500"
-                    step="1"
-                    placeholder="Ej: 3"
-                    value={canvasConfig.targetRows ?? ''}
-                    onChange={(e) => {
-                      const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
-                      setCanvasConfig(prev => ({ ...prev, targetRows: val }));
-                    }}
-                    onBlur={() => {
-                      if (!canvasConfig.targetRows || canvasConfig.targetRows < 1) {
-                        setCanvasConfig(prev => ({ ...prev, targetRows: 1 }));
-                      }
-                    }}
-                    className="w-full bg-slate-50 border border-purple-200 rounded-xl px-4 py-2.5 font-mono font-black text-lg text-purple-950 focus:outline-none focus:border-[#532C8C] focus:bg-white transition-all text-center"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
-                    filas
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 mt-1.5">
-                  El sistema calculará cuántos stickers caben en 1 fila a lo ancho y los multiplicará por tus filas configuradas.
-                </p>
-              </div>
-            </div>
-
-            {/* CÁLCULO EN TIEMPO REAL: RESUMEN TÉCNICO PREPRESS */}
-            {(() => {
-              const layout = calculateCanvasRollLayout(canvasConfig);
-              return (
-                <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-2xl p-4 shadow-md flex flex-col gap-2.5 border border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-extrabold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-teal-400" />
-                      Cálculo en Vivo para Plotter
-                    </span>
-                    <span className="font-mono text-slate-300 text-[11px]">
-                      Troquel: 45 × 130 mm
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center pt-1">
-                    <div className="bg-white/10 rounded-xl p-2 border border-white/10">
-                      <span className="text-[10px] text-slate-300 uppercase block font-bold">Por Fila</span>
-                      <strong className="text-lg font-black text-white">{layout.cols}</strong>
-                      <span className="text-[10px] text-slate-400 block">a lo ancho</span>
-                    </div>
-
-                    <div className="bg-white/10 rounded-xl p-2 border border-white/10">
-                      <span className="text-[10px] text-slate-300 uppercase block font-bold">Filas</span>
-                      <strong className="text-lg font-black text-amber-300">{layout.rows}</strong>
-                      <span className="text-[10px] text-slate-400 block">hacia abajo</span>
-                    </div>
-
-                    <div className="bg-white/15 rounded-xl p-2 border border-teal-400/30">
-                      <span className="text-[10px] text-teal-300 uppercase block font-black">Total Artes</span>
-                      <strong className="text-xl font-black text-teal-300">{layout.totalStickers}</strong>
-                      <span className="text-[10px] text-teal-200/80 block">stickers</span>
-                    </div>
-
-                    <div className="bg-white/10 rounded-xl p-2 border border-white/10">
-                      <span className="text-[10px] text-slate-300 uppercase block font-bold">Largo Rollo</span>
-                      <strong className="text-lg font-black text-white">{layout.linearMeters} m</strong>
-                      <span className="text-[10px] text-slate-400 block">{Math.round(layout.canvasHeightMm)} mm</span>
-                    </div>
-                  </div>
-
-                  <div className="text-[11px] text-slate-300 bg-white/5 p-2 rounded-xl flex items-center justify-between border border-white/5">
-                    <span>Tamaño exacto del archivo:</span>
-                    <strong className="font-mono text-amber-300">
-                      {layout.canvasWidthMm} mm × {Math.round(layout.canvasHeightMm)} mm
-                    </strong>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* SECCIÓN 3: OPCIONES DE CORTE Y CMYK */}
-            <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200 flex flex-col gap-2">
-              <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5 uppercase tracking-wide">
-                <Printer className="w-3.5 h-3.5 text-[#532C8C]" />
-                Opciones de Imprenta & Espacio de Color
-              </span>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <label className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={printConfig.cutExternal}
-                    onChange={(e) => setPrintConfig(prev => ({ ...prev, cutExternal: e.target.checked }))}
-                    className="accent-[#FF00FF] w-4 h-4 rounded"
-                  />
-                  <div>
-                    <span className="font-bold text-slate-800 block">Vector de Corte Externo</span>
-                    <span className="text-[10px] text-pink-600 font-mono font-bold">Magenta 100% CMYK (0,100,0,0)</span>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={printConfig.cutInternal}
-                    onChange={(e) => setPrintConfig(prev => ({ ...prev, cutInternal: e.target.checked }))}
-                    className="accent-[#FF00FF] w-4 h-4 rounded"
-                  />
-                  <div>
-                    <span className="font-bold text-slate-800 block">Troqueles Interiores</span>
-                    <span className="text-[10px] text-pink-600 font-mono font-bold">Magenta 100% CMYK (0,100,0,0)</span>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            {/* BOTONES DE DESCARGA */}
-            <div className="pt-2 flex flex-col gap-2">
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={handleExportCanvasPdf}
-                className="w-full bg-[#00A896] hover:bg-[#008677] active:scale-95 text-white font-extrabold py-3.5 px-3 rounded-xl transition-all cursor-pointer shadow-md text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <FileText className="w-4 h-4 text-white" />
-                <span>Descargar Lienzo PDF CMYK (100% Vectorial)</span>
-              </button>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  disabled={isExporting}
-                  onClick={handleExportCanvasSvg}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-2.5 px-3 rounded-xl transition-all cursor-pointer shadow-md text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  <Download className="w-3.5 h-3.5 text-teal-300" />
-                  <span>Lienzo SVG CMYK (Plotter)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowCanvasRollModal(false)}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-3 rounded-xl transition-all cursor-pointer text-xs"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL 3: Ficha Completa del Conductor / QR Lleno */}
       {selectedHolderModal && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setSelectedHolderModal(null);
           }}
         >
-          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl relative border border-emerald-100 animate-in zoom-in-95 duration-200 flex flex-col gap-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl relative border border-emerald-100 animate-in zoom-in-95 duration-200 flex flex-col gap-4">
             {/* Header del Modal */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-3">
@@ -2323,8 +2077,8 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       Activo 24/7
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    Sticker SKU: <span className="font-bold text-[#532C8C]">{selectedHolderModal.sku}</span>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Sticker SKU: <span className="font-bold text-blue-600">{selectedHolderModal.sku}</span>
                   </p>
                 </div>
               </div>
@@ -2333,7 +2087,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 onClick={() => setSelectedHolderModal(null)}
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -2350,13 +2104,13 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 <div className="grid grid-cols-2 gap-2 border-b border-slate-200/60 pb-2">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Cédula de Identidad</span>
-                    <span className="font-semibold text-slate-800 font-mono text-xs mt-0.5 block">
+                    <span className="font-semibold text-slate-800 text-xs mt-0.5 block">
                       {selectedHolderModal.holder?.cedula || 'V-00.000.000'}
                     </span>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Teléfono Conductor</span>
-                    <span className="font-semibold text-slate-800 font-mono text-xs mt-0.5 block">
+                    <span className="font-semibold text-slate-800 text-xs mt-0.5 block">
                       {selectedHolderModal.holder?.phone || 'Sin número'}
                     </span>
                   </div>
@@ -2371,7 +2125,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Placa del Vehículo</span>
-                    <span className="font-mono font-extrabold text-[#532C8C] bg-purple-50 px-2 py-0.5 rounded text-xs border border-purple-100 inline-block mt-0.5">
+                    <span className="font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs border border-blue-100 inline-block mt-0.5">
                       {selectedHolderModal.holder?.plate || 'S/P'}
                     </span>
                   </div>
@@ -2381,7 +2135,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tipo de Sangre</span>
                     <span className="font-extrabold text-rose-600 text-xs mt-0.5 block">
-                      🩸 {selectedHolderModal.holder?.bloodType || 'O+'}
+                      {selectedHolderModal.holder?.bloodType || 'O+'}
                     </span>
                   </div>
                   <div>
@@ -2394,13 +2148,13 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
               </div>
 
               {/* Tarjeta de Contacto de Auxilio Familiar */}
-              <div className="bg-teal-50 p-3.5 rounded-2xl border border-teal-100 flex items-center justify-between">
+              <div className="bg-blue-50 p-3.5 rounded-2xl border border-blue-100 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider block">Contacto Familiar de Auxilio</span>
                   <div className="font-extrabold text-slate-900 text-xs mt-0.5">
                     {selectedHolderModal.holder?.emergencyContactName || 'Familiar Registrado'}
                   </div>
-                  <div className="text-[11px] text-teal-800 font-mono mt-0.5">
+                  <div className="text-[11px] text-teal-800 mt-0.5">
                     {selectedHolderModal.holder?.emergencyContactPhone || selectedHolderModal.holder?.phone}
                   </div>
                 </div>
@@ -2408,7 +2162,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 {selectedHolderModal.holder?.emergencyContactPhone && (
                   <a
                     href={`tel:${selectedHolderModal.holder.emergencyContactPhone}`}
-                    className="bg-[#00A896] hover:bg-[#008677] text-white font-extrabold text-xs py-2 px-3 rounded-xl flex items-center gap-1.5 shadow-sm transition-all"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-2 px-3 rounded-xl flex items-center gap-1.5 shadow-sm transition-all"
                   >
                     <Phone className="w-3.5 h-3.5" />
                     <span>Llamar</span>
@@ -2423,7 +2177,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 href={`${getBaseUrl()}/v/${selectedHolderModal.sku}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 bg-[#532C8C] hover:bg-[#432172] text-white font-extrabold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm"
               >
                 <Smartphone className="w-3.5 h-3.5" />
                 <span>Abrir Botón S.O.S del Usuario</span>
@@ -2446,10 +2200,11 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 onClick={() => {
                   setSelectedSku(selectedHolderModal.sku);
                   setSelectedHolderModal(null);
+                  setShowPrintModal(true);
                 }}
                 className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2.5 px-3.5 rounded-xl transition-all cursor-pointer"
               >
-                Ver Troquel
+                Imprimir
               </button>
             </div>
           </div>
@@ -2459,12 +2214,12 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
       {/* MODAL 4: Editar Información del Titular y Vehículo */}
       {editingQrModal && (
         <div 
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm animate-in fade-in"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget && !isSavingEdit) setEditingQrModal(null);
           }}
         >
-          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl relative border border-blue-100 animate-in zoom-in-95 duration-200 flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl relative border border-blue-100 animate-in zoom-in-95 duration-200 flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
             {/* Header del Modal */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-3">
@@ -2476,7 +2231,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                     <h3 className="text-base font-extrabold text-slate-900 leading-tight">
                       Editar Ficha del Vehículo
                     </h3>
-                    <span className="font-mono text-xs font-bold text-[#532C8C] bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
                       {editingQrModal.sku}
                     </span>
                   </div>
@@ -2491,7 +2246,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                 onClick={() => setEditingQrModal(null)}
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -2500,7 +2255,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
               {/* Sección 1: Titular */}
               <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  👤 Datos del Conductor Titular
+                  Datos del Conductor Titular
                 </span>
                 
                 <div>
@@ -2510,7 +2265,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                     required
                     value={editFormData.name}
                     onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#532C8C]"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600"
                     placeholder="Ej. Carlos Pérez"
                   />
                 </div>
@@ -2523,7 +2278,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       required
                       value={editFormData.cedula}
                       onChange={(e) => setEditFormData({ ...editFormData, cedula: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-[#532C8C]"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600"
                       placeholder="Ej. V-18.452.901"
                     />
                   </div>
@@ -2534,7 +2289,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       required
                       value={editFormData.phone}
                       onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-[#532C8C]"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600"
                       placeholder="Ej. 0414-1234567"
                     />
                   </div>
@@ -2544,7 +2299,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
               {/* Sección 2: Vehículo */}
               <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  🚗 Datos del Vehículo
+                  Datos del Vehículo
                 </span>
 
                 <div className="grid grid-cols-2 gap-2.5">
@@ -2555,7 +2310,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       required
                       value={editFormData.vehicle}
                       onChange={(e) => setEditFormData({ ...editFormData, vehicle: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#532C8C]"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600"
                       placeholder="Ej. Bera SBR 150 / Toyota Corolla"
                     />
                   </div>
@@ -2566,7 +2321,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       required
                       value={editFormData.plate}
                       onChange={(e) => setEditFormData({ ...editFormData, plate: e.target.value.toUpperCase() })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-mono uppercase focus:outline-none focus:border-[#532C8C]"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 uppercase focus:outline-none focus:border-blue-600"
                       placeholder="Ej. AA1A00A"
                     />
                   </div>
@@ -2578,7 +2333,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                     <select
                       value={editFormData.bloodType}
                       onChange={(e) => setEditFormData({ ...editFormData, bloodType: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#532C8C]"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600"
                     >
                       {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(b => (
                         <option key={b} value={b}>{b}</option>
@@ -2591,7 +2346,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       type="text"
                       value={editFormData.insurancePolicy}
                       onChange={(e) => setEditFormData({ ...editFormData, insurancePolicy: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#532C8C]"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600"
                       placeholder="Póliza 24/7 #..."
                     />
                   </div>
@@ -2599,9 +2354,9 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
               </div>
 
               {/* Sección 3: Contacto Familiar de Emergencia */}
-              <div className="bg-teal-50/70 p-3.5 rounded-2xl border border-teal-100 space-y-3">
+              <div className="bg-blue-50/60 p-3.5 rounded-2xl border border-blue-100 space-y-3">
                 <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider block">
-                  📞 Contacto Familiar de Auxilio
+                  Contacto Familiar de Auxilio
                 </span>
 
                 <div className="grid grid-cols-2 gap-2.5">
@@ -2611,7 +2366,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       type="text"
                       value={editFormData.emergencyContactName}
                       onChange={(e) => setEditFormData({ ...editFormData, emergencyContactName: e.target.value })}
-                      className="w-full bg-white border border-teal-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#00A896]"
+                      className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#00A896]"
                       placeholder="Ej. Esposa / Padre"
                     />
                   </div>
@@ -2621,7 +2376,7 @@ export default function QrManagerView({ searchQuery = '', onGoToExporter }) {
                       type="tel"
                       value={editFormData.emergencyContactPhone}
                       onChange={(e) => setEditFormData({ ...editFormData, emergencyContactPhone: e.target.value })}
-                      className="w-full bg-white border border-teal-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-[#00A896]"
+                      className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#00A896]"
                       placeholder="Ej. 0424-9876543"
                     />
                   </div>

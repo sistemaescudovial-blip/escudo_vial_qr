@@ -26,18 +26,38 @@ export const supabase = isSupabaseConfigured
 
 export function mapQrFromDb(row) {
   if (!row) return null;
-  const isPrinted = Boolean(row.holder?.isPrinted);
-  const printedAt = row.holder?.printedAt || null;
+  const rawHolder = row.holder && typeof row.holder === 'object' ? { ...row.holder } : null;
+  const isPrinted = Boolean(rawHolder?.isPrinted);
+  const printedAt = rawHolder?.printedAt || null;
+  const batchId = rawHolder?.batchId || null;
+  const batchDescription = rawHolder?.batchDescription || '';
+  const createdAt = rawHolder?.createdAt || row.created_at || null;
+
+  let cleanHolder = null;
+  if (rawHolder) {
+    delete rawHolder.isPrinted;
+    delete rawHolder.printedAt;
+    delete rawHolder.batchId;
+    delete rawHolder.batchDescription;
+    delete rawHolder.createdAt;
+    if (Object.keys(rawHolder).length > 0) {
+      cleanHolder = rawHolder;
+    }
+  }
+
   return {
     sku: row.sku,
     category: row.category || 'Auto',
     status: row.status || 'inactive',
     scansCount: row.scans_count || 0,
     activatedAt: row.activated_at || null,
-    holder: row.holder || null,
+    holder: cleanHolder,
     lastLocation: row.last_location || null,
     isPrinted,
-    printedAt
+    printedAt,
+    batchId,
+    batchDescription,
+    createdAt
   };
 }
 
@@ -48,6 +68,10 @@ export function mapQrToDb(qr) {
     holderData.isPrinted = Boolean(qr.isPrinted);
     holderData.printedAt = qr.printedAt || null;
   }
+  if (qr.batchId) holderData.batchId = qr.batchId;
+  if (qr.batchDescription) holderData.batchDescription = qr.batchDescription;
+  if (qr.createdAt) holderData.createdAt = qr.createdAt;
+
   return {
     sku: qr.sku,
     category: qr.category || 'Auto',

@@ -5,13 +5,13 @@ export default function ModalTelemedicina({ isOpen, onClose }) {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div 
-        className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col shadow-2xl relative border border-purple-100 max-h-[88vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-2xl p-5 w-full max-w-sm flex flex-col shadow-2xl relative border border-slate-200 max-h-[88vh] overflow-y-auto animate-in zoom-in-95 duration-200"
       >
         <button
           type="button"
@@ -23,7 +23,7 @@ export default function ModalTelemedicina({ isOpen, onClose }) {
         </button>
 
         <div className="flex items-start gap-3 pr-6">
-          <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#00A896] flex items-center justify-center shrink-0 shadow-sm border border-teal-100">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-sm border border-blue-100">
             <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: '"FILL" 1' }}>
               medical_services
             </span>
@@ -33,7 +33,7 @@ export default function ModalTelemedicina({ isOpen, onClose }) {
               <h3 className="text-slate-900 font-bold text-[16px] leading-tight">
                 Central Médica 24/7
               </h3>
-              <span className="bg-teal-100 text-[#00A896] font-bold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+              <span className="bg-blue-50 text-blue-600 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                 BENEFICIOS
               </span>
             </div>
@@ -46,7 +46,7 @@ export default function ModalTelemedicina({ isOpen, onClose }) {
         {/* Lista de Beneficios */}
         <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2.5">
           <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="material-symbols-outlined text-[#00A896] text-[20px] shrink-0 mt-0.5">
+            <span className="material-symbols-outlined text-blue-600 text-[20px] shrink-0 mt-0.5">
               support_agent
             </span>
             <div className="text-left">
@@ -70,7 +70,7 @@ export default function ModalTelemedicina({ isOpen, onClose }) {
           </div>
 
           <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="material-symbols-outlined text-[#532C8C] text-[20px] shrink-0 mt-0.5">
+            <span className="material-symbols-outlined text-blue-600 text-[20px] shrink-0 mt-0.5">
               prescriptions
             </span>
             <div className="text-left">
@@ -82,7 +82,7 @@ export default function ModalTelemedicina({ isOpen, onClose }) {
           </div>
 
           <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="material-symbols-outlined text-teal-600 text-[20px] shrink-0 mt-0.5">
+            <span className="material-symbols-outlined text-blue-600 text-[20px] shrink-0 mt-0.5">
               speed
             </span>
             <div className="text-left">
@@ -94,7 +94,7 @@ export default function ModalTelemedicina({ isOpen, onClose }) {
           </div>
 
           <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="material-symbols-outlined text-purple-600 text-[20px] shrink-0 mt-0.5">
+            <span className="material-symbols-outlined text-blue-600 text-[20px] shrink-0 mt-0.5">
               family_restroom
             </span>
             <div className="text-left">
@@ -109,7 +109,7 @@ export default function ModalTelemedicina({ isOpen, onClose }) {
         <div className="mt-3.5 flex flex-col gap-2">
           <a
             href="tel:018000911000"
-            className="w-full bg-[#00A896] hover:bg-[#008677] text-white font-bold text-[13px] py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] uppercase tracking-wider shadow-md text-center"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[13px] py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] uppercase tracking-wider shadow-md text-center"
           >
             <span className="material-symbols-outlined text-[18px]">call</span>
             <span>CONSULTAR CON UN MÉDICO</span>

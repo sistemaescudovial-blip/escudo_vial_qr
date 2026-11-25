@@ -12,13 +12,13 @@ export default function ModalSofia({ isOpen, onClose }) {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div 
-        className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col shadow-2xl relative border border-purple-100 max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-2xl p-5 w-full max-w-sm flex flex-col shadow-2xl relative border border-slate-200 max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200"
       >
         <button
           type="button"
@@ -30,7 +30,7 @@ export default function ModalSofia({ isOpen, onClose }) {
         </button>
 
         <div className="flex items-start gap-3.5 pr-6">
-          <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#00A896] flex items-center justify-center shrink-0 shadow-sm border border-teal-100">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 shadow-sm border border-emerald-100">
             <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: '"FILL" 1' }}>
               smart_toy
             </span>
@@ -40,7 +40,7 @@ export default function ModalSofia({ isOpen, onClose }) {
               <h3 className="text-slate-900 font-bold text-[16px] leading-tight">
                 WhatsApp Sofía (IA)
               </h3>
-              <span className="bg-teal-100 text-[#00A896] font-bold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+              <span className="bg-emerald-50 text-emerald-600 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                 ASISTENTE
               </span>
             </div>
@@ -50,8 +50,8 @@ export default function ModalSofia({ isOpen, onClose }) {
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-teal-50/60 rounded-xl border border-teal-100 text-slate-700 text-[12px] leading-relaxed">
-          <p className="font-semibold text-[#008677] flex items-center gap-1 mb-1">
+        <div className="mt-4 p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 text-slate-700 text-[12px] leading-relaxed">
+          <p className="font-semibold text-emerald-700 flex items-center gap-1 mb-1">
             <span className="material-symbols-outlined text-[16px]">verified</span>
             Conexión Segura Directa
           </p>
@@ -63,7 +63,7 @@ export default function ModalSofia({ isOpen, onClose }) {
           href={`https://wa.me/573009110000?text=${whatsappMessage}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 w-full bg-[#00A896] hover:bg-[#008677] text-white font-bold text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] uppercase tracking-wider shadow-md text-center"
+          className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] uppercase tracking-wider shadow-md text-center"
         >
           <span className="material-symbols-outlined text-[19px]">chat</span>
           <span>Chatear con Sofía</span>

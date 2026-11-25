@@ -18,8 +18,8 @@ export default function DriverPage() {
   }, [sku, searchParams, setActiveSku]);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex justify-center items-start">
-      <div className="w-full max-w-md min-h-screen shadow-2xl relative">
+    <div className="min-h-screen bg-slate-100/70 flex justify-center items-start">
+      <div className="w-full max-w-md min-h-screen bg-slate-50 shadow-xl border-x border-slate-200/80 relative">
         <MobileApp />
       </div>
     </div>

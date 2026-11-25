@@ -5,7 +5,7 @@ import MobileHeader from './MobileHeader';
 import SosHero from './SosHero';
 import ActionCards from './ActionCards';
 import BottomNav from './BottomNav';
-import { Truck, Radio, ChevronRight, MessageSquare } from 'lucide-react';
+import { Truck, Radio, ChevronRight } from 'lucide-react';
 
 import ModalActivarQr from './ModalActivarQr';
 import ModalReportar from './ModalReportar';
@@ -45,20 +45,20 @@ export default function MobileApp({ showSimulatorBar = false }) {
   );
 
   return (
-    <div className="w-full min-h-[100dvh] bg-gradient-to-b from-[#532C8C] via-[#4b2581] to-[#432172] text-slate-800 font-sans flex flex-col relative antialiased selection:bg-[#00A896] selection:text-white">
+    <div className="w-full min-h-[100dvh] bg-[#F8FAFC] text-slate-800 font-sans flex flex-col relative antialiased selection:bg-blue-600 selection:text-white">
       {/* Barra de simulación solo si se solicita explícitamente en modo demo */}
       {showSimulatorBar && (
-        <div className="w-full bg-slate-950/90 border-b border-white/10 px-3 py-1 flex items-center justify-between text-xs text-white z-50">
-          <span className="text-[11px] font-mono text-teal-300 truncate">QR: {cleanSku}</span>
+        <div className="w-full bg-white border-b border-slate-200 px-3 py-1 flex items-center justify-between text-xs text-slate-700 z-50">
+          <span className="text-[11px] text-blue-600 font-semibold truncate">QR: {cleanSku}</span>
           <select 
             value={activeSku}
             onChange={(e) => setActiveSku(e.target.value)}
-            className="bg-white/10 text-white text-[11px] rounded px-2 py-0.5 border border-white/20"
+            className="bg-slate-50 text-slate-800 text-[11px] rounded-lg px-2 py-0.5 border border-slate-200"
           >
             {qrList.map(q => {
               const itemCleanSku = q.sku.replace(/[#-]/g, '').toUpperCase();
               return (
-                <option key={q.sku} value={q.sku} className="bg-slate-900 text-white">
+                <option key={q.sku} value={q.sku}>
                   {itemCleanSku} ({q.status === 'active' ? 'Activo' : 'Sin activar'})
                 </option>
               );
@@ -77,105 +77,100 @@ export default function MobileApp({ showSimulatorBar = false }) {
       }} />
 
       {/* Contenedor Principal de la App */}
-      <main className="flex-1 flex flex-col relative w-full pt-16 pb-40">
+      <main className="flex-1 flex flex-col relative w-full pt-16 pb-36">
         <div className="flex flex-col w-full px-4 space-y-4 max-w-md mx-auto relative">
           
-          {/* ======================================================== */}
-          {/* ESTADO 1: STICKER NUEVO / SIN VINCULAR (MÁXIMO PROTAGONISMO) */}
-          {/* ======================================================== */}
+          {/* ESTADO 1: STICKER NUEVO / SIN VINCULAR */}
           {!isQrActive ? (
-            <div className="flex flex-col items-center text-center mt-2 animate-in fade-in zoom-in-95 duration-200">
-              {/* Ícono de Escaneo / Activación con Ondas */}
-              <div className="relative flex items-center justify-center w-28 h-28 my-2">
-                <div className="absolute inset-0 rounded-full bg-teal-400/20 animate-ping opacity-75" />
-                <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-tr from-[#00A896] to-emerald-400 text-white flex items-center justify-center shadow-xl shadow-teal-900/40 border border-teal-200/30">
-                  <span className="material-symbols-outlined text-[48px]">
+            <div className="flex flex-col items-center text-center mt-3 animate-in fade-in zoom-in-95 duration-200">
+              {/* Ícono de Escaneo / Activación */}
+              <div className="relative flex items-center justify-center w-24 h-24 my-3">
+                <div className="w-20 h-20 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-xs border border-blue-100">
+                  <span className="material-symbols-outlined text-[42px]">
                     qr_code_scanner
                   </span>
                 </div>
               </div>
 
-              {/* Badge del SKU limpio */}
-              <div className="inline-flex items-center gap-1.5 bg-amber-400/20 border border-amber-300/40 text-amber-200 px-3.5 py-1 rounded-full text-xs font-mono font-extrabold tracking-wider my-2">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                <span>STICKER VIRGEN: {cleanSku}</span>
+              {/* Badge del SKU */}
+              <div className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold tracking-wider my-1.5">
+                
+                <span>STICKER DISPONIBLE: {cleanSku}</span>
               </div>
 
-              <h2 className="text-white font-extrabold text-[22px] tracking-tight leading-tight mt-1">
+              <h2 className="text-slate-900 font-bold text-xl tracking-tight leading-tight mt-1">
                 ¡Bienvenido a Escudo Vial!
               </h2>
-              <p className="text-white/80 text-[13px] font-medium leading-relaxed max-w-xs mt-2">
-                Has escaneado un sticker físico oficial. Para habilitar tu <strong>botón de auxilio S.O.S satelital</strong> y cobertura 24/7, registra tu vehículo a continuación:
+              <p className="text-slate-500 text-xs font-medium leading-relaxed max-w-xs mt-2">
+                Has escaneado un sticker oficial. Para habilitar tu <strong>botón de auxilio S.O.S satelital</strong> y cobertura 24/7, registra tu vehículo a continuación:
               </p>
 
-              {/* Botón Principal Gigante y Protagonista */}
+              {/* Botón Principal de Vinculación */}
               <button
                 type="button"
                 onClick={() => setIsQrModalOpen(true)}
-                className="mt-5 w-full bg-gradient-to-r from-[#00A896] via-teal-500 to-emerald-500 hover:brightness-110 active:scale-95 text-white font-extrabold text-[15px] py-4 px-6 rounded-2xl flex items-center justify-center gap-2.5 uppercase tracking-wider shadow-xl shadow-teal-950/40 border border-teal-300/30 transition-all cursor-pointer group"
+                className="mt-5 w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold text-sm py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 uppercase tracking-wider shadow-sm shadow-blue-500/20 transition-all cursor-pointer group"
               >
-                <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-[20px]">
                   verified_user
                 </span>
                 <span>VINCULAR Y ACTIVAR AHORA</span>
               </button>
 
-              {/* Sección de Servicios Bloqueados (Explicación clara de por qué deben registrarse) */}
-              <div className="w-full mt-6 bg-black/25 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-left">
-                <span className="text-[10px] font-bold text-teal-300 uppercase tracking-wider block mb-2">
-                  🔒 SERVICIOS PENDIENTES POR ACTIVAR
+              {/* Sección de Servicios Bloqueados */}
+              <div className="w-full mt-5 bg-white rounded-2xl p-4 border border-slate-200/90 text-left shadow-xs">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-2.5">
+                  SERVICIOS PENDIENTES POR ACTIVAR
                 </span>
 
-                <div className="space-y-2.5 text-xs text-white/70">
+                <div className="space-y-2 text-xs">
                   <div 
                     onClick={() => setIsQrModalOpen(true)}
-                    className="flex items-center justify-between p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-rose-400 text-[18px]">lock</span>
-                      <span className="font-semibold text-white/90">Botón de Pánico S.O.S y Despacho Satelital</span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">lock</span>
+                      <span className="font-medium text-slate-700">Botón de Pánico S.O.S Satelital</span>
                     </div>
-                    <span className="text-[10px] text-amber-300 font-bold">Bloqueado</span>
+                    <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium">Bloqueado</span>
                   </div>
 
                   <div 
                     onClick={() => setIsQrModalOpen(true)}
-                    className="flex items-center justify-between p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-teal-400 text-[18px]">lock</span>
-                      <span className="font-semibold text-white/90">Triage de Ambulancia y Grúa 24/7</span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">lock</span>
+                      <span className="font-medium text-slate-700">Triage de Ambulancia y Grúa 24/7</span>
                     </div>
-                    <span className="text-[10px] text-amber-300 font-bold">Bloqueado</span>
+                    <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium">Bloqueado</span>
                   </div>
 
                   <div 
                     onClick={() => setIsQrModalOpen(true)}
-                    className="flex items-center justify-between p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-purple-400 text-[18px]">lock</span>
-                      <span className="font-semibold text-white/90">Contacto Familiar y Ficha Médica</span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">lock</span>
+                      <span className="font-medium text-slate-700">Contacto Familiar y Ficha Médica</span>
                     </div>
-                    <span className="text-[10px] text-amber-300 font-bold">Bloqueado</span>
+                    <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium">Bloqueado</span>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            /* ======================================================== */
-            /* ESTADO 2: STICKER ACTIVO / PROTEGIDO (S.O.S HABILITADO) */
-            /* ======================================================== */
+            /* ESTADO 2: STICKER ACTIVO / PROTEGIDO */
             <>
               {/* Badge superior compacto de vehículo protegido */}
-              <div className="flex items-center justify-between bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15 text-[11px] text-white shadow-xs">
+              <div className="flex items-center justify-between bg-white px-4 py-2 rounded-full border border-slate-200/90 text-xs text-slate-800 shadow-xs">
                 <div className="flex items-center gap-1.5 truncate">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                  <span className="font-extrabold truncate">{currentQr.holder.vehicle}</span>
-                  <span className="text-white/50">•</span>
-                  <span className="font-mono text-teal-300 font-bold">{currentQr.holder.plate}</span>
+                  
+                  <span className="font-semibold truncate text-slate-800">{currentQr.holder.vehicle}</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-blue-600 font-bold">{currentQr.holder.plate}</span>
                 </div>
-                <span className="text-[10px] font-mono text-white/80 font-bold bg-white/10 px-2 py-0.5 rounded-full shrink-0 ml-2">
+                <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-full shrink-0 ml-2 border border-slate-200">
                   {cleanSku}
                 </span>
               </div>
@@ -184,30 +179,30 @@ export default function MobileApp({ showSimulatorBar = false }) {
               {activeIncident && (
                 <div 
                   onClick={() => setIsSosModalOpen(true)}
-                  className="w-full bg-slate-950/85 backdrop-blur-md border border-teal-400/40 p-3 sm:p-3.5 rounded-2xl shadow-xl shadow-purple-950/40 flex items-center justify-between cursor-pointer transition-all active:scale-[0.98] group animate-in fade-in relative overflow-hidden"
+                  className="w-full bg-white border border-rose-200 p-3.5 rounded-2xl shadow-xs flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] group animate-in fade-in relative"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-md ${
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs ${
                       activeIncident.status === 'en_camino' 
-                        ? 'bg-gradient-to-tr from-[#00A896] to-teal-400' 
-                        : 'bg-gradient-to-tr from-rose-600 to-red-500 animate-pulse'
+                        ? 'bg-blue-600' 
+                        : 'bg-rose-600'
                     }`}>
                       {activeIncident.status === 'en_camino' ? (
-                        <Truck className="w-5 h-5 animate-bounce" />
+                        <Truck className="w-5 h-5" />
                       ) : (
                         <Radio className="w-5 h-5 animate-spin" style={{ animationDuration: '3s' }} />
                       )}
                     </div>
                     <div className="text-left min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-extrabold text-white text-[13px] tracking-tight">
+                        <span className="font-bold text-slate-900 text-[13px] tracking-tight">
                           {activeIncident.status === 'en_camino' ? '¡Unidad en Camino!' : 'Alerta S.O.S Activa'}
                         </span>
-                        <span className="font-mono text-[10px] bg-white/10 text-teal-300 font-bold px-2 py-0.5 rounded-md whitespace-nowrap border border-white/10">
+                        <span className="text-[10px] bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded-md whitespace-nowrap border border-slate-200">
                           {activeIncident.folio}
                         </span>
                       </div>
-                      <div className="text-[11.5px] text-teal-200/90 mt-0.5 font-medium truncate max-w-[180px] sm:max-w-xs">
+                      <div className="text-[11px] text-slate-500 mt-0.5 font-medium truncate max-w-[180px] sm:max-w-xs">
                         {activeIncident.status === 'en_camino' 
                           ? `Despachado: ${activeIncident.dispatchedUnit || 'Unidad de Auxilio'}` 
                           : 'Torre 24/7 coordinando asistencia'}
@@ -215,9 +210,9 @@ export default function MobileApp({ showSimulatorBar = false }) {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-[#00A896] to-teal-600 text-white px-3 py-2 rounded-xl text-xs font-black shadow-md shadow-teal-500/20 group-hover:brightness-110 transition-all shrink-0 ml-2">
-                    <span>Ver Estado</span>
-                    <ChevronRight className="w-4 h-4" />
+                  <div className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs shrink-0 ml-2">
+                    <span>Ver</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
               )}
@@ -236,7 +231,7 @@ export default function MobileApp({ showSimulatorBar = false }) {
         </div>
       </main>
 
-      {/* Barra Inferior de Navegación Flotante (Solo activa si ya está vinculado) */}
+      {/* Barra Inferior de Navegación Flotante */}
       {isQrActive && (
         <BottomNav 
           onOpenAfiliacionModal={() => setIsAfiliacionModalOpen(true)}

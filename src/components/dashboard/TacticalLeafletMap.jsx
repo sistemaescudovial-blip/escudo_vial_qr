@@ -166,7 +166,7 @@ export default function TacticalLeafletMap({
 
             <!-- Identificadores: SKU arriba y Placa/Modelo abajo (Sin cortes) -->
             <div class="flex flex-col min-w-0 flex-1 leading-tight overflow-hidden">
-              <span class="font-mono text-[11px] font-black tracking-wide whitespace-nowrap text-white drop-shadow-xs">
+              <span class="text-[11px] font-black tracking-wide whitespace-nowrap text-white drop-shadow-xs">
                 ${emg.sku}
               </span>
               <span class="text-[9px] font-bold text-white/90 truncate max-w-[85px] uppercase tracking-tighter">
@@ -194,9 +194,9 @@ export default function TacticalLeafletMap({
 
       // Popup informativo enriquecido con calles reales
       const popupContent = `
-        <div style="font-family: sans-serif; min-width: 190px; padding: 4px;">
+        <div style="font-family: 'Inter', sans-serif; min-width: 190px; padding: 4px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <strong style="color: #532C8C; font-size: 13px;">${emg.folio}</strong>
+            <strong style="color: #1E6FFB; font-size: 13px;">${emg.folio}</strong>
             <span style="font-size: 9px; font-weight: 800; background: ${emg.status === 'critico' ? '#ffe4e6' : '#ccfbf1'}; color: ${emg.status === 'critico' ? '#be123c' : '#0f766e'}; padding: 1px 6px; border-radius: 4px; text-transform: uppercase;">
               ${emg.status}
             </span>
@@ -204,7 +204,7 @@ export default function TacticalLeafletMap({
           <div style="font-size: 12px; font-weight: 700; color: #1e293b;">${emg.holderName}</div>
           <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${emg.vehicle || 'Vehículo en vía'}</div>
           <div style="font-size: 10px; color: #0284c7; margin-top: 4px; font-weight: 600;">
-            📍 ${emg.location?.address || 'Ubicación GPS'}
+            <svg style="width: 12px; height: 12px; display: inline-block; vertical-align: -2px; margin-right: 3px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${emg.location?.address || 'Ubicación GPS'}
           </div>
         </div>
       `;
@@ -232,8 +232,8 @@ export default function TacticalLeafletMap({
         const unitLng = lng - 0.003;
 
         const unitHtml = `
-          <div class="px-2 py-0.5 rounded-lg bg-emerald-950 border border-emerald-400 text-emerald-300 font-mono text-[10px] font-bold shadow-lg flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <div class="px-2 py-0.5 rounded-lg bg-emerald-950 border border-emerald-400 text-emerald-300 text-[10px] font-bold shadow-lg flex items-center gap-1">
+            
             <span>${emg.dispatchedUnit}</span>
           </div>
         `;
@@ -293,7 +293,7 @@ export default function TacticalLeafletMap({
   };
 
   return (
-    <div className="relative w-full h-[430px] rounded-2xl overflow-hidden border border-slate-800 shadow-inner bg-slate-950">
+    <div className="relative w-full h-[430px] rounded-2xl overflow-hidden border border-slate-200 shadow-xs bg-slate-100">
       {/* Contenedor del Mapa Leaflet */}
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
@@ -303,15 +303,15 @@ export default function TacticalLeafletMap({
           <button
             type="button"
             onClick={() => setShowLayerMenu(!showLayerMenu)}
-            className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 backdrop-blur-md shadow-lg transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+            className="p-2 rounded-xl bg-white/95 hover:bg-white text-slate-700 border border-slate-200 shadow-xs backdrop-blur-md shadow-lg transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
             title="Cambiar tipo de mapa"
           >
-            <Layers className="w-4 h-4 text-teal-400" />
+            <Layers className="w-4 h-4 text-blue-600" />
             <span className="hidden sm:inline">{TILE_LAYERS[activeLayerKey].name}</span>
           </button>
 
           {showLayerMenu && (
-            <div className="absolute top-full right-0 mt-1.5 bg-slate-950/95 border border-slate-700/80 rounded-2xl p-1.5 shadow-2xl backdrop-blur-md min-w-[150px] flex flex-col gap-1 z-40">
+            <div className="absolute top-full right-0 mt-1.5 bg-white border border-slate-200 rounded-xl p-1.5 shadow-lg min-w-[150px] flex flex-col gap-1 z-40">
               {Object.entries(TILE_LAYERS).map(([key, config]) => (
                 <button
                   key={key}
@@ -322,8 +322,8 @@ export default function TacticalLeafletMap({
                   }}
                   className={`px-3 py-1.5 rounded-xl text-left text-xs font-bold transition-all cursor-pointer ${
                     activeLayerKey === key
-                      ? 'bg-teal-600 text-white shadow-sm'
-                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   {config.name}
@@ -344,11 +344,11 @@ export default function TacticalLeafletMap({
         </button>
 
         {/* Botones de Zoom */}
-        <div className="flex flex-col bg-slate-900/90 rounded-xl border border-slate-700 backdrop-blur-md shadow-lg overflow-hidden">
+        <div className="flex flex-col bg-white/95 rounded-xl border border-slate-200 backdrop-blur-md shadow-xs overflow-hidden">
           <button
             type="button"
             onClick={handleZoomIn}
-            className="p-2 text-slate-200 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-b border-slate-800"
+            className="p-2 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-200"
             title="Acercar mapa"
           >
             <ZoomIn className="w-3.5 h-3.5" />
@@ -356,7 +356,7 @@ export default function TacticalLeafletMap({
           <button
             type="button"
             onClick={handleZoomOut}
-            className="p-2 text-slate-200 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+            className="p-2 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
             title="Alejar mapa"
           >
             <ZoomOut className="w-3.5 h-3.5" />
@@ -365,29 +365,29 @@ export default function TacticalLeafletMap({
       </div>
 
       {/* Leyenda Táctica Flotante Inferior Izquierda */}
-      <div className="absolute bottom-3 left-3 z-30 bg-slate-950/85 backdrop-blur-md border border-slate-800/90 rounded-xl px-3 py-1.5 flex items-center gap-3 text-[10px] text-slate-200 shadow-xl pointer-events-none">
+      <div className="absolute bottom-3 left-3 z-30 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl px-3 py-1.5 flex items-center gap-3 text-[10px] text-slate-700 shadow-xs pointer-events-none">
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+          
           <span className="font-bold">S.O.S Crítico</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-teal-400"></span>
+          
           <span>En Camino</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+          
           <span>Resuelto</span>
         </span>
       </div>
 
       {/* Si no hay alertas activas, overlay sutil */}
       {emergencies.length === 0 && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 text-center pointer-events-none bg-slate-950/40 backdrop-blur-[2px]">
-          <div className="p-4 bg-slate-950/90 backdrop-blur-md rounded-2xl border border-slate-700/80 max-w-xs shadow-2xl">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 text-center pointer-events-none bg-slate-900/10 backdrop-blur-[1px]">
+          <div className="p-4 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 max-w-xs shadow-lg">
             <span className="text-teal-400 font-extrabold text-xs block mb-1 tracking-wider uppercase">
               Cartografía Vial en Vivo
             </span>
-            <span className="text-slate-300 text-[11px] leading-relaxed block">
+            <span className="text-slate-600 text-[11px] leading-relaxed block font-medium">
               Sin incidentes reportados en este momento. Las transmisiones S.O.S se ubicarán en tiempo real sobre las calles exactas.
             </span>
           </div>

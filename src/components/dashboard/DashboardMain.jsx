@@ -5,7 +5,6 @@ import KpiCards from './KpiCards';
 import LiveRadarView from './LiveRadarView';
 import ReportsTableView from './ReportsTableView';
 import QrManagerView from './QrManagerView';
-import QrStandaloneExporterView from './QrStandaloneExporterView';
 import AnalyticsView from './AnalyticsView';
 import IncomingEmergencyModal from './IncomingEmergencyModal';
 import ErrorBoundary from '../common/ErrorBoundary';
@@ -13,20 +12,20 @@ import {
   Radio, 
   FileSpreadsheet, 
   QrCode, 
-  BarChart3,
-  Sparkles
+  BarChart3
 } from 'lucide-react';
 
 export default function DashboardMain() {
   const { emergencies } = useApp();
-  const [activeTab, setActiveTab] = useState('radar'); // 'radar' | 'reportes' | 'qrs' | 'exportador' | 'metricas'
+  const [activeTab, setActiveTab] = useState('radar'); // 'radar' | 'reportes' | 'qrs' | 'metricas'
+  const [qrsResetKey, setQrsResetKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEmergencyId, setSelectedEmergencyId] = useState(null);
 
   const activeEmergenciesCount = emergencies.filter(e => e.status !== 'resuelto').length;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col antialiased">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans flex flex-col antialiased">
       {/* Ventana Flotante Modal con Sirena de Emergencia Entrante */}
       <IncomingEmergencyModal 
         onAccepted={(emgId) => {
@@ -49,20 +48,19 @@ export default function DashboardMain() {
           activeFilter={activeTab}
         />
 
-        {/* Barra de Pestañas Principales */}
-        <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
+        {/* Barra de Pestañas Principales (Estilo Respond.io SaaS) */}
+        <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto no-scrollbar">
           {[
             { 
               id: 'radar', 
-              label: 'Radar & Despacho S.O.S', 
+              label: 'Emergencias', 
               icon: Radio,
               isEmergency: true,
               badgeCount: activeEmergenciesCount
             },
-            { id: 'reportes', label: 'Bandeja de Reportes Viales', icon: FileSpreadsheet },
-            { id: 'qrs', label: 'Gestión de Stickers / Lotes', icon: QrCode },
-            { id: 'exportador', label: 'Exportador de QRs Puros (EV)', icon: Sparkles, highlight: true },
-            { id: 'metricas', label: 'Métricas & Estadísticas', icon: BarChart3 },
+            { id: 'reportes', label: 'Reportes', icon: FileSpreadsheet },
+            { id: 'qrs', label: 'Gestión QR', icon: QrCode },
+            { id: 'metricas', label: 'Estadísticas', icon: BarChart3 },
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -70,29 +68,26 @@ export default function DashboardMain() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all shrink-0 cursor-pointer ${
+                onClick={() => {
+                  if (tab.id === 'qrs') {
+                    setQrsResetKey(k => k + 1);
+                  }
+                  setActiveTab(tab.id);
+                }}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                   tab.isEmergency
                     ? isActive
-                      ? 'bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 text-white shadow-md shadow-rose-600/30 ring-2 ring-rose-400/50'
-                      : 'bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100 hover:border-rose-400'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
                     : isActive
-                      ? 'bg-[#532C8C] text-white shadow-sm shadow-purple-900/20'
-                      : tab.highlight
-                        ? 'text-[#00A896] bg-teal-50/70 border border-teal-200/80 hover:bg-teal-100/70'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-white border border-slate-200/80 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                {tab.isEmergency && (
-                  <span className="relative flex h-2 w-2 mr-0.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
-                  </span>
-                )}
-                <Icon className={`w-4 h-4 ${tab.isEmergency ? (isActive ? 'text-white' : 'text-rose-600') : (isActive ? 'text-teal-300' : tab.highlight ? 'text-[#00A896]' : 'text-slate-400')}`} />
+                <Icon className={`w-4 h-4 ${tab.isEmergency ? (isActive ? 'text-white' : 'text-rose-600') : (isActive ? 'text-white' : 'text-slate-400')}`} />
                 <span>{tab.label}</span>
                 {tab.badgeCount > 0 && (
-                  <span className="bg-white text-rose-700 text-[10px] font-black px-1.5 py-0.2 rounded-full shadow-xs animate-bounce ml-0.5">
+                  <span className="bg-white text-rose-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs ml-0.5">
                     {tab.badgeCount}
                   </span>
                 )}
@@ -112,8 +107,7 @@ export default function DashboardMain() {
               />
             )}
             {activeTab === 'reportes' && <ReportsTableView searchQuery={searchQuery} />}
-            {activeTab === 'qrs' && <QrManagerView searchQuery={searchQuery} onGoToExporter={() => setActiveTab('exportador')} />}
-            {activeTab === 'exportador' && <QrStandaloneExporterView searchQuery={searchQuery} />}
+            {activeTab === 'qrs' && <QrManagerView key={qrsResetKey} searchQuery={searchQuery} />}
             {activeTab === 'metricas' && <AnalyticsView />}
           </ErrorBoundary>
         </div>

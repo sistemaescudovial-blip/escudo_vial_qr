@@ -5,25 +5,25 @@ export default function ModalAfiliacion({ isOpen, onClose }) {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div 
-        className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col shadow-2xl relative border border-purple-100 animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-2xl p-6 w-full max-w-sm flex flex-col shadow-2xl relative border border-slate-200/90 animate-in zoom-in-95 duration-200"
       >
         <button
           type="button"
           aria-label="Cerrar modal"
           onClick={onClose}
-          className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
         >
           <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div className="flex items-start gap-3.5 pr-6">
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-[#532C8C] flex items-center justify-center shrink-0 shadow-sm border border-purple-100">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-sm border border-blue-100">
             <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: '"FILL" 1' }}>
               verified
             </span>
@@ -44,10 +44,10 @@ export default function ModalAfiliacion({ isOpen, onClose }) {
           href="https://play.google.com/store/apps"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 w-full bg-[#532C8C] hover:bg-[#432172] text-white font-bold text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] uppercase tracking-wider shadow-md text-center"
+          className="mt-5 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-sm text-center"
         >
           <span className="material-symbols-outlined text-[19px]">shop</span>
-          <span>descargar app</span>
+          <span>Descargar App</span>
         </a>
       </div>
     </div>

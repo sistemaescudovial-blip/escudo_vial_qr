@@ -145,6 +145,25 @@ export function AppProvider({ children }) {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [unreadAlert, setUnreadAlert] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [adminUsername, setAdminUsername] = useState(() => {
+    return localStorage.getItem('ev_admin_user') || 'Operador Alpha';
+  });
+  const [adminPassword, setAdminPassword] = useState(() => {
+    return localStorage.getItem('ev_admin_pass') || '12345';
+  });
+
+  const updateAdminCredentials = (newUser, newPass) => {
+    if (newUser) {
+      setAdminUsername(newUser);
+      localStorage.setItem('ev_admin_user', newUser);
+    }
+    if (newPass) {
+      setAdminPassword(newPass);
+      localStorage.setItem('ev_admin_pass', newPass);
+    }
+    return true;
+  };
+
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     return localStorage.getItem('ev_admin_auth') === 'true';
   });
@@ -559,7 +578,7 @@ export function AppProvider({ children }) {
         notes: [
           {
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            text: `⚠️ Alerta S.O.S reiterada por el usuario en ${locationData.address}`
+            text: `Alerta S.O.S reiterada por el usuario en ${locationData.address}`
           },
           ...existingNotes
         ]
@@ -818,10 +837,13 @@ export function AppProvider({ children }) {
   };
 
   // 4. GENERACIÓN DE QRS POR LOTE (BATCH GENERATOR)
-  const createBatchQrs = async (count = 10, prefix = 'EV', vehicleCategory = 'Auto') => {
+  const createBatchQrs = async (count = 10, prefix = 'EV', vehicleCategory = 'Auto', batchDescription = '') => {
     const newItems = [];
     const existingSkus = new Set(qrList.map(q => q.sku.toUpperCase()));
     const cleanPrefix = (prefix || 'EV').replace(/[#-]/g, '').toUpperCase();
+    const nowIso = new Date().toISOString();
+    const batchId = `LOTE-${String(Date.now()).slice(-6)}`;
+    const cleanDescription = (batchDescription || '').trim();
 
     for (let i = 1; i <= count; i++) {
       let candidateSku = '';
@@ -847,6 +869,9 @@ export function AppProvider({ children }) {
         category: vehicleCategory,
         holder: null,
         activatedAt: null,
+        createdAt: nowIso,
+        batchId,
+        batchDescription: cleanDescription,
         scansCount: 0,
         lastLocation: null,
         isPrinted: false,
@@ -1004,6 +1029,7 @@ export function AppProvider({ children }) {
       category: category || 'Auto',
       holder: null,
       activatedAt: null,
+      createdAt: new Date().toISOString(),
       scansCount: 0,
       lastLocation: null,
       isPrinted: false,
@@ -1116,8 +1142,8 @@ export function AppProvider({ children }) {
       skuSet.forEach(async (cleanSku) => {
         try {
           const item = qrList.find(q => q.sku.toUpperCase() === cleanSku);
-          const holderData = { ...(item?.holder || {}), isPrinted: true, printedAt: now };
-          await supabase.from('qrs').update({ holder: holderData }).eq('sku', cleanSku);
+          const dbItem = mapQrToDb({ ...(item || { sku: cleanSku }), isPrinted: true, printedAt: now });
+          await supabase.from('qrs').update({ holder: dbItem?.holder || null }).eq('sku', cleanSku);
         } catch (err) {
           console.warn(`Error actualizando estado impreso de ${cleanSku} en Supabase:`, err);
         }
@@ -1147,7 +1173,8 @@ export function AppProvider({ children }) {
       skuSet.forEach(async (cleanSku) => {
         try {
           const item = qrList.find(q => q.sku.toUpperCase() === cleanSku);
-          const holderData = { ...(item?.holder || {}) };
+          const dbItem = mapQrToDb({ ...(item || { sku: cleanSku }), isPrinted: false, printedAt: null });
+          const holderData = dbItem?.holder ? { ...dbItem.holder } : {};
           delete holderData.isPrinted;
           delete holderData.printedAt;
           const finalHolder = Object.keys(holderData).length > 0 ? holderData : null;
@@ -1188,13 +1215,15 @@ export function AppProvider({ children }) {
       (async () => {
         try {
           const item = qrList.find(q => q.sku.toUpperCase() === clean);
-          const holderData = { ...(item?.holder || {}) };
+          const dbItem = mapQrToDb({
+            ...(item || { sku: clean }),
+            isPrinted: !isCurrentlyPrinted,
+            printedAt: !isCurrentlyPrinted ? now : null
+          });
+          const holderData = dbItem?.holder ? { ...dbItem.holder } : {};
           if (isCurrentlyPrinted) {
             delete holderData.isPrinted;
             delete holderData.printedAt;
-          } else {
-            holderData.isPrinted = true;
-            holderData.printedAt = now;
           }
           const finalHolder = Object.keys(holderData).length > 0 ? holderData : null;
           await supabase.from('qrs').update({ holder: finalHolder }).eq('sku', clean);
@@ -1230,6 +1259,9 @@ export function AppProvider({ children }) {
         unreadAlert,
         setUnreadAlert,
         isAdminAuthenticated,
+        adminUsername,
+        adminPassword,
+        updateAdminCredentials,
         loginAdmin,
         logoutAdmin,
         triggerSos,

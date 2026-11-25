@@ -11,8 +11,6 @@ import {
   Volume2, 
   VolumeX, 
   ExternalLink,
-  Clock,
-  Radio,
   X
 } from 'lucide-react';
 
@@ -28,7 +26,7 @@ export default function IncomingEmergencyModal({ onAccepted }) {
   const audioCtxRef = useRef(null);
   const intervalRef = useRef(null);
 
-  // Reproducir sirena repetitiva de emergencia táctica mientras el modal esté abierto
+  // Reproducir sirena repetitiva de emergencia mientras el modal esté abierto
   useEffect(() => {
     if (!unreadAlert || unreadAlert.status !== 'critico' || !soundEnabled) {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -53,7 +51,6 @@ export default function IncomingEmergencyModal({ onAccepted }) {
         const gain = ctx.createGain();
 
         osc.type = 'sawtooth';
-        // Sirena bitonal de alta atención (880Hz -> 580Hz -> 880Hz)
         osc.frequency.setValueAtTime(880, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(520, ctx.currentTime + 0.35);
         osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.7);
@@ -71,7 +68,6 @@ export default function IncomingEmergencyModal({ onAccepted }) {
       }
     };
 
-    // Tocar de inmediato y repetir cada 1.2 segundos
     playSirenTone();
     intervalRef.current = setInterval(playSirenTone, 1200);
 
@@ -80,7 +76,6 @@ export default function IncomingEmergencyModal({ onAccepted }) {
     };
   }, [unreadAlert, soundEnabled]);
 
-  // Si no hay alerta crítica pendiente, no mostrar nada
   if (!unreadAlert || unreadAlert.status !== 'critico') {
     return null;
   }
@@ -102,21 +97,21 @@ export default function IncomingEmergencyModal({ onAccepted }) {
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(unreadAlert.location?.address || 'Caracas, Venezuela')}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
       {/* Ventana Flotante Modal */}
-      <div className="bg-white rounded-3xl w-full max-w-xl border-2 border-rose-500 shadow-2xl shadow-rose-950/60 overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-200">
         
         {/* Cabecera de Alarma con Sirena Visual */}
-        <div className="bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 text-white px-5 py-4 flex items-center justify-between shadow-md">
+        <div className="bg-rose-600 text-white px-5 py-4 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
-            <span className="relative flex h-4 w-4">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-90"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-white"></span>
+            <span className="relative flex h-3.5 w-3.5">
+              
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-white"></span>
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-300 animate-bounce" />
-                <h2 className="text-base font-black tracking-wide uppercase">
+                <AlertTriangle className="w-4 h-4 text-amber-300 animate-bounce" />
+                <h2 className="text-sm font-bold tracking-wide uppercase">
                   ¡NUEVA ALERTA S.O.S ENTRANTE!
                 </h2>
               </div>
@@ -138,7 +133,7 @@ export default function IncomingEmergencyModal({ onAccepted }) {
                   : 'bg-black/30 text-white/60 border-white/20 hover:bg-black/40'
               }`}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4 animate-pulse" /> : <VolumeX className="w-4 h-4" />}
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
             {/* Cerrar / Minimizar */}
@@ -157,57 +152,57 @@ export default function IncomingEmergencyModal({ onAccepted }) {
         <div className="p-5 flex flex-col gap-4 overflow-y-auto max-h-[75vh]">
           
           {/* Identificadores: Folio, SKU y Hora */}
-          <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200">
+          <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200/90">
             <div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Código Folio</span>
-              <span className="font-mono font-extrabold text-lg text-rose-700">
+              <span className="font-bold text-lg text-rose-600">
                 {unreadAlert.folio}
               </span>
             </div>
 
             <div className="text-right">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sticker QR</span>
-              <span className="font-mono font-black text-xs text-[#532C8C] bg-purple-100/80 px-2.5 py-1 rounded-xl border border-purple-200">
+              <span className="font-semibold text-xs text-blue-700 bg-blue-50 px-2.5 py-1 rounded-xl border border-blue-200">
                 {unreadAlert.sku}
               </span>
             </div>
           </div>
 
           {/* Ficha del Titular y Reportante */}
-          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/90 space-y-3 text-xs">
-            <div className="flex items-center justify-between border-b border-slate-200/70 pb-2">
-              <span className="text-slate-500 font-bold uppercase text-[10px] flex items-center gap-1.5">
+          <div className="bg-slate-50/70 rounded-2xl p-4 border border-slate-200 space-y-3 text-xs">
+            <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+              <span className="text-slate-500 font-semibold uppercase text-[10px] flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-slate-400" /> Titular Registrado
               </span>
-              <span className="font-black text-slate-900 text-sm">{unreadAlert.holderName}</span>
+              <span className="font-bold text-slate-900 text-sm">{unreadAlert.holderName}</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 border-b border-slate-200/70 pb-2">
+            <div className="grid grid-cols-2 gap-3 border-b border-slate-200/80 pb-2">
               <div>
-                <span className="text-slate-400 font-bold uppercase text-[9.5px] block">Cédula</span>
-                <span className="font-bold text-slate-800 text-xs">{unreadAlert.cedula}</span>
+                <span className="text-slate-400 font-semibold uppercase text-[9.5px] block">Cédula</span>
+                <span className="font-semibold text-slate-800 text-xs">{unreadAlert.cedula}</span>
               </div>
               <div>
-                <span className="text-slate-400 font-bold uppercase text-[9.5px] block">Reportado Por</span>
-                <span className={`font-extrabold text-xs capitalize ${
-                  unreadAlert.reporterType === 'titular' ? 'text-teal-700' : 'text-purple-700'
+                <span className="text-slate-400 font-semibold uppercase text-[9.5px] block">Reportado Por</span>
+                <span className={`font-bold text-xs capitalize ${
+                  unreadAlert.reporterType === 'titular' ? 'text-emerald-700' : 'text-blue-700'
                 }`}>
-                  {unreadAlert.reporterType === 'titular' ? '👤 Titular' : '👥 Tercero / Testigo'}
+                  {unreadAlert.reporterType === 'titular' ? 'Titular' : 'Tercero / Testigo'}
                 </span>
               </div>
             </div>
 
-            <div className="border-b border-slate-200/70 pb-2">
-              <span className="text-slate-400 font-bold uppercase text-[9.5px] block">Vehículo / Placa</span>
-              <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs mt-0.5">
-                <Car className="w-4 h-4 text-[#532C8C]" />
+            <div className="border-b border-slate-200/80 pb-2">
+              <span className="text-slate-400 font-semibold uppercase text-[9.5px] block">Vehículo / Placa</span>
+              <div className="flex items-center gap-1.5 font-semibold text-slate-800 text-xs mt-0.5">
+                <Car className="w-4 h-4 text-blue-600" />
                 <span>{unreadAlert.vehicle || 'Vehículo en vía'}</span>
               </div>
             </div>
 
             <div>
-              <span className="text-slate-400 font-bold uppercase text-[9.5px] block">Ubicación GPS Detectada</span>
-              <div className="flex items-start gap-1.5 text-slate-800 font-semibold text-xs mt-1">
+              <span className="text-slate-400 font-semibold uppercase text-[9.5px] block">Ubicación GPS Detectada</span>
+              <div className="flex items-start gap-1.5 text-slate-800 font-medium text-xs mt-1">
                 <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                 <span>{unreadAlert.location?.address || 'Ubicación reportada'}</span>
               </div>
@@ -217,7 +212,7 @@ export default function IncomingEmergencyModal({ onAccepted }) {
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] text-[#532C8C] hover:text-purple-800 font-bold hover:underline"
+                  className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-700 font-semibold hover:underline"
                 >
                   <ExternalLink className="w-3 h-3" />
                   <span>Abrir coordenadas en Google Maps</span>
@@ -226,13 +221,13 @@ export default function IncomingEmergencyModal({ onAccepted }) {
             </div>
           </div>
 
-          {/* Acciones de Contacto Rápido a 1 Clic */}
+          {/* Acciones de Contacto Rápido */}
           <div className="grid grid-cols-2 gap-2.5">
             <a
               href={`tel:${unreadAlert.phone}`}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-3 px-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-700/20"
+              className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs"
             >
-              <Phone className="w-4 h-4" />
+              <Phone className="w-4 h-4 text-slate-500" />
               <span>Llamar al Teléfono</span>
             </a>
 
@@ -240,20 +235,20 @@ export default function IncomingEmergencyModal({ onAccepted }) {
               href={`https://wa.me/${unreadAlert.phone?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${unreadAlert.holderName}, nos comunicamos desde la Central de Monitoreo de Escudo Vial 24/7 con respecto a tu alerta de emergencia ${unreadAlert.folio}.`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#00A896] hover:bg-[#008677] text-white font-extrabold text-xs py-3 px-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-teal-700/20"
+              className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs"
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-4 h-4 text-emerald-600" />
               <span>WhatsApp Directo</span>
             </a>
           </div>
 
-          {/* BOTÓN PRINCIPAL GIGANTE: ACEPTAR Y ATENDER EMERGENCIA */}
+          {/* BOTÓN PRINCIPAL: ACEPTAR Y ATENDER EMERGENCIA */}
           <button
             type="button"
             onClick={handleAcceptAndDispatch}
-            className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:brightness-110 active:scale-[0.98] text-white font-black text-sm sm:text-base py-4 px-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-emerald-600/30 cursor-pointer uppercase tracking-wider"
+            className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold text-sm py-3.5 px-4 rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-sm shadow-blue-500/25 cursor-pointer uppercase tracking-wider"
           >
-            <CheckCircle className="w-6 h-6 text-white" />
+            <CheckCircle className="w-5 h-5 text-white" />
             <span>ACEPTAR Y ATENDER EMERGENCIA</span>
           </button>
 
@@ -261,7 +256,7 @@ export default function IncomingEmergencyModal({ onAccepted }) {
           <button
             type="button"
             onClick={handleDismiss}
-            className="w-full text-center text-xs font-bold text-slate-500 hover:text-slate-800 py-2 cursor-pointer transition-colors"
+            className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-800 py-1.5 cursor-pointer transition-colors"
           >
             Ver en el Mapa Táctico sin cerrar caso
           </button>

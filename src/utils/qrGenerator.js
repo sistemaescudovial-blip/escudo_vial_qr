@@ -59,12 +59,12 @@ export async function createStickerCanvas(sku, targetUrl, sizeCm = 8) {
 
   // 3. Cabecera Institucional
   ctx.fillStyle = '#ffffff';
-  ctx.font = `800 ${Math.round(pxSize * 0.065)}px 'Plus Jakarta Sans', sans-serif`;
+  ctx.font = `800 ${Math.round(pxSize * 0.065)}px 'Inter', sans-serif`;
   ctx.textAlign = 'center';
   ctx.fillText('ESCUDO VIAL', pxSize / 2, pxSize * 0.10);
 
   ctx.fillStyle = '#68CFC2';
-  ctx.font = `700 ${Math.round(pxSize * 0.032)}px 'Plus Jakarta Sans', sans-serif`;
+  ctx.font = `700 ${Math.round(pxSize * 0.032)}px 'Inter', sans-serif`;
   ctx.fillText('SEGURIDAD & AUXILIO 24/7', pxSize / 2, pxSize * 0.145);
 
   // 4. Contenedor Blanco del QR
@@ -117,11 +117,11 @@ export async function createStickerCanvas(sku, targetUrl, sizeCm = 8) {
   // 7. Pie del Sticker: Código SKU y Texto de Emergencia
   const cleanSku = (sku || '').replace(/[#-]/g, '').toUpperCase();
   ctx.fillStyle = '#ffffff';
-  ctx.font = `bold ${Math.round(pxSize * 0.058)}px 'JetBrains Mono', monospace`;
+  ctx.font = `bold ${Math.round(pxSize * 0.058)}px 'Inter', sans-serif`;
   ctx.fillText(cleanSku, pxSize / 2, pxSize * 0.85);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = `600 ${Math.round(pxSize * 0.03)}px 'Plus Jakarta Sans', sans-serif`;
+  ctx.font = `600 ${Math.round(pxSize * 0.03)}px 'Inter', sans-serif`;
   ctx.fillText('ESCANEE EN CASO DE EMERGENCIA', pxSize / 2, pxSize * 0.91);
 
   ctx.restore();
@@ -225,17 +225,50 @@ export async function exportBatchToPdf(qrs, sizeCm = 8, baseUrl = window.locatio
 }
 
 /**
- * Dibuja el Código QR puro con la insignia central "EV" en Canvas a resolución 300 DPI
+ * Resuelve tamaño de fuente y coordenadas exactas (X/Y) del SKU al pie en escala de diseño
+ */
+function resolveStandaloneSkuLayout(totalSize, safeSizeCm, options = {}) {
+  const stickerSizeMm = safeSizeCm * 10;
+  const fallbackSizeMm = stickerSizeMm * 0.05;
+  const fallbackBottomMm = stickerSizeMm * 0.08 * 0.4;
+
+  const rawSizeMm = Number(options.skuSizeMm);
+  const rawOffsetXMm = Number(options.skuOffsetXMm);
+  const rawBottomYMm = Number(options.skuBottomYMm);
+
+  const skuSizeMm = Number.isFinite(rawSizeMm)
+    ? Math.max(0.5, Math.min(stickerSizeMm * 0.5, rawSizeMm))
+    : fallbackSizeMm;
+  const skuOffsetXMm = Number.isFinite(rawOffsetXMm)
+    ? Math.max(-stickerSizeMm * 0.5, Math.min(stickerSizeMm * 0.5, rawOffsetXMm))
+    : 0;
+  const skuBottomYMm = Number.isFinite(rawBottomYMm)
+    ? Math.max(0, Math.min(stickerSizeMm, rawBottomYMm))
+    : fallbackBottomMm;
+
+  const scale = totalSize / stickerSizeMm;
+  return {
+    fontSize: skuSizeMm * scale,
+    x: (totalSize / 2) + (skuOffsetXMm * scale),
+    y: totalSize - (skuBottomYMm * scale)
+  };
+}
+
+/**
+ * Dibuja el Código QR puro con la insignia central "EV" en Canvas a resolución configurable (DPI)
  */
 export async function createStandaloneQrCanvas(sku, targetUrl, sizeCm = 8, options = {}) {
   const {
     transparentBg = false,
     darkColor = '#231749',
-    showSkuFooter = false
+    showSkuFooter = false,
+    dpi = 300
   } = options;
 
-  // 300 DPI: 1 cm ≈ 118 px. Min 512px para alta definición
-  const pxSize = Math.max(512, Math.round(sizeCm * 118));
+  const safeSizeCm = Math.max(0.5, Number(sizeCm) || 8);
+  const safeDpi = Math.max(72, Math.min(1200, Number(dpi) || 300));
+  // Conversión física exacta cm -> pulgadas -> píxeles (mínimo 180px para legibilidad, máx 4500px para estabilidad del canvas)
+  const pxSize = Math.min(4500, Math.max(180, Math.round((safeSizeCm / 2.54) * safeDpi)));
   const canvas = document.createElement('canvas');
   canvas.width = pxSize;
   canvas.height = pxSize;
@@ -243,8 +276,9 @@ export async function createStandaloneQrCanvas(sku, targetUrl, sizeCm = 8, optio
 
   const cornerRadius = pxSize * 0.12;
 
-  // 1. Fondo de la tarjeta (blanco o transparente)
-  if (!transparentBg) {
+  // 1. Fondo de la tarjeta (blanco o transparente; JPG siempre usa blanco sólido)
+  const useTransparent = Boolean(transparentBg) && !options.forceOpaqueBg;
+  if (!useTransparent) {
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.roundRect(0, 0, pxSize, pxSize, cornerRadius);
@@ -294,59 +328,151 @@ export async function createStandaloneQrCanvas(sku, targetUrl, sizeCm = 8, optio
 
   // Texto "EV" centrado en blanco
   ctx.fillStyle = '#ffffff';
-  ctx.font = `bold ${Math.round(centerSize * 0.44)}px 'Plus Jakarta Sans', sans-serif`;
+  ctx.font = `bold ${Math.round(centerSize * 0.44)}px 'Inter', sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('EV', centerX, centerY);
   ctx.textBaseline = 'alphabetic';
 
-  // 5. SKU opcional al pie
+  // 5. SKU opcional al pie (posición y tamaño exactos en mm)
   if (showSkuFooter) {
     const cleanSku = (sku || '').replace(/[#-]/g, '').toUpperCase();
+    const skuLayout = resolveStandaloneSkuLayout(pxSize, safeSizeCm, options);
     ctx.fillStyle = darkColor;
-    ctx.font = `bold ${Math.round(pxSize * 0.05)}px 'JetBrains Mono', monospace`;
+    ctx.font = `bold ${skuLayout.fontSize.toFixed(2)}px 'Inter', sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(cleanSku, pxSize / 2, pxSize - (margin * 0.4));
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(cleanSku, skuLayout.x, skuLayout.y);
   }
 
   return canvas;
 }
 
 /**
+ * Genera SVG vectorial puro de un código QR solo con insignia central "EV" y SKU opcional
+ */
+export async function createStandaloneQrSvgString(sku, targetUrl, sizeCm = 8, options = {}) {
+  const {
+    transparentBg = false,
+    darkColor = '#0F172A',
+    showSkuFooter = false
+  } = options;
+
+  const safeSizeCm = Math.max(0.5, Number(sizeCm) || 8);
+  const cleanSku = (sku || '').replace(/[#-]/g, '').toUpperCase();
+
+  const rawQrSvg = await QRCode.toString(targetUrl, {
+    type: 'svg',
+    margin: 1,
+    color: {
+      dark: darkColor,
+      light: '#ffffff00'
+    },
+    errorCorrectionLevel: 'H'
+  });
+
+  const viewBoxMatch = rawQrSvg.match(/viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/);
+  const qrViewSize = viewBoxMatch ? viewBoxMatch[1] : '33';
+  const innerPaths = rawQrSvg
+    .replace(/^[\s\S]*?<svg[^>]*>/i, '')
+    .replace(/<\/svg>[\s\S]*$/i, '');
+
+  const sizePx = 1000;
+  const margin = Math.round(sizePx * (showSkuFooter ? 0.08 : 0.09));
+  const qrSize = sizePx - margin * 2;
+  const qrY = showSkuFooter ? Math.round(margin * 0.7) : margin;
+  const centerSize = qrSize * 0.22;
+  const centerX = sizePx / 2;
+  const centerY = qrY + qrSize / 2;
+
+  const bgRect = !transparentBg
+    ? `<rect width="${sizePx}" height="${sizePx}" rx="${Math.round(sizePx * 0.12)}" fill="#ffffff" />`
+    : '';
+
+  const skuLayout = showSkuFooter ? resolveStandaloneSkuLayout(sizePx, safeSizeCm, options) : null;
+  const skuText = showSkuFooter
+    ? `<text x="${skuLayout.x.toFixed(2)}" y="${skuLayout.y.toFixed(2)}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-weight="bold" font-size="${skuLayout.fontSize.toFixed(2)}" fill="${darkColor}">${cleanSku}</text>`
+    : '';
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${safeSizeCm}cm" height="${safeSizeCm}cm" viewBox="0 0 ${sizePx} ${sizePx}">
+  ${bgRect}
+  <svg x="${margin}" y="${qrY}" width="${qrSize}" height="${qrSize}" viewBox="0 0 ${qrViewSize} ${qrViewSize}">
+    ${innerPaths}
+  </svg>
+  <circle cx="${centerX}" cy="${centerY}" r="${(centerSize / 2).toFixed(2)}" fill="#00A896" stroke="#ffffff" stroke-width="${Math.round(sizePx * 0.018)}" />
+  <text x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="central" font-family="Inter, Arial, sans-serif" font-weight="bold" font-size="${Math.round(centerSize * 0.44)}" fill="#ffffff">EV</text>
+  ${skuText}
+</svg>`;
+}
+
+/**
  * Descarga individual del código QR puro en PNG
  */
 export async function exportStandaloneQrPng(sku, targetUrl, sizeCm = 8, options = {}) {
+  const { sizeLabel = `${sizeCm}x${sizeCm}cm`, dpi = 300 } = options;
   const canvas = await createStandaloneQrCanvas(sku, targetUrl, sizeCm, options);
   const cleanSku = (sku || 'QR').replace(/[#-]/g, '').toUpperCase();
   const dataUrl = canvas.toDataURL('image/png');
   const link = document.createElement('a');
   link.href = dataUrl;
-  link.download = `QR_${cleanSku}_${sizeCm}x${sizeCm}cm.png`;
+  link.download = `QR_${cleanSku}_${sizeLabel}_${dpi}dpi.png`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 }
 
 /**
- * Exporta lote de códigos QR puros en un archivo ZIP
+ * Exporta lote de códigos QR solos en un archivo ZIP según formato (png | jpg | svg | pdf)
  */
 export async function exportBatchStandaloneQrZip(qrs, sizeCm = 8, baseUrl = window.location.origin, options = {}) {
+  const { sizeLabel = `${sizeCm}x${sizeCm}cm`, dpi = 300, format = 'png' } = options;
+  const safeFormat = ['png', 'jpg', 'svg', 'pdf'].includes(format) ? format : 'png';
+  const safeSizeCm = Math.max(0.5, Number(sizeCm) || 8);
+
   const zip = new JSZip();
-  const folder = zip.folder(`QRs_EscudoVial_${sizeCm}x${sizeCm}cm`);
+  const folder = zip.folder(`QRs_EscudoVial_${sizeLabel}_${safeFormat.toUpperCase()}_${dpi}dpi`);
 
   for (const qr of qrs) {
     const cleanSku = (qr.sku || '').replace(/[#-]/g, '').toUpperCase();
     const targetUrl = `${baseUrl}/v/${cleanSku}`;
-    const canvas = await createStandaloneQrCanvas(cleanSku, targetUrl, sizeCm, options);
-    const dataUrl = canvas.toDataURL('image/png');
-    const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
-    folder.file(`QR_${cleanSku}_${sizeCm}x${sizeCm}cm.png`, base64Data, { base64: true });
+
+    if (safeFormat === 'svg') {
+      const svgStr = await createStandaloneQrSvgString(cleanSku, targetUrl, safeSizeCm, options);
+      folder.file(`QR_${cleanSku}_${sizeLabel}.svg`, svgStr);
+    } else if (safeFormat === 'jpg') {
+      const canvas = await createStandaloneQrCanvas(cleanSku, targetUrl, safeSizeCm, {
+        ...options,
+        forceOpaqueBg: true
+      });
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.96);
+      const base64Data = dataUrl.replace(/^data:image\/jpeg;base64,/, '');
+      folder.file(`QR_${cleanSku}_${sizeLabel}_${dpi}dpi.jpg`, base64Data, { base64: true });
+    } else if (safeFormat === 'pdf') {
+      const canvas = await createStandaloneQrCanvas(cleanSku, targetUrl, safeSizeCm, {
+        ...options,
+        forceOpaqueBg: true
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'cm',
+        format: [safeSizeCm, safeSizeCm]
+      });
+      doc.addImage(imgData, 'PNG', 0, 0, safeSizeCm, safeSizeCm);
+      const pdfBytes = doc.output('arraybuffer');
+      folder.file(`QR_${cleanSku}_${sizeLabel}_${dpi}dpi.pdf`, pdfBytes);
+    } else {
+      const canvas = await createStandaloneQrCanvas(cleanSku, targetUrl, safeSizeCm, options);
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+      folder.file(`QR_${cleanSku}_${sizeLabel}_${dpi}dpi.png`, base64Data, { base64: true });
+    }
   }
 
   const content = await zip.generateAsync({ type: 'blob' });
   const downloadLink = document.createElement('a');
   downloadLink.href = URL.createObjectURL(content);
-  downloadLink.download = `Lote_QRs_Puros_EscudoVial_${qrs.length}_unidades_${sizeCm}x${sizeCm}cm.zip`;
+  downloadLink.download = `Lote_QRs_Solos_EscudoVial_${qrs.length}_unidades_${sizeLabel}_${safeFormat.toUpperCase()}_${dpi}dpi.zip`;
   document.body.appendChild(downloadLink);
   downloadLink.click();
   document.body.removeChild(downloadLink);
@@ -356,6 +482,7 @@ export async function exportBatchStandaloneQrZip(qrs, sizeCm = 8, baseUrl = wind
  * Exporta pliego PDF con cuadrícula de códigos QR puros listos para troquel o corte
  */
 export async function exportBatchStandaloneQrPdf(qrs, sizeCm = 8, baseUrl = window.location.origin, options = {}) {
+  const { sizeLabel = `${sizeCm}x${sizeCm}cm`, dpi = 300 } = options;
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'cm',
@@ -366,12 +493,13 @@ export async function exportBatchStandaloneQrPdf(qrs, sizeCm = 8, baseUrl = wind
   const pageHeight = 29.7;
   const margin = 1.0;
 
-  const qrW = sizeCm;
-  const qrH = sizeCm;
+  const maxQrFit = Math.min(pageWidth - margin * 2, pageHeight - margin * 2 - 1.5);
+  const qrW = Math.min(Math.max(0.5, Number(sizeCm) || 8), maxQrFit);
+  const qrH = qrW;
   const gap = 0.6;
 
-  const cols = Math.floor((pageWidth - (margin * 2) + gap) / (qrW + gap));
-  const rows = Math.floor((pageHeight - (margin * 2) - 1.5 + gap) / (qrH + gap));
+  const cols = Math.max(1, Math.floor((pageWidth - (margin * 2) + gap) / (qrW + gap)));
+  const rows = Math.max(1, Math.floor((pageHeight - (margin * 2) - 1.5 + gap) / (qrH + gap)));
 
   let currentIndex = 0;
 
@@ -383,11 +511,11 @@ export async function exportBatchStandaloneQrPdf(qrs, sizeCm = 8, baseUrl = wind
     // Cabecera del pliego
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.setTextColor(83, 44, 140);
-    doc.text('ESCUDO VIAL - PLIEGO DE CÓDIGOS QR PUROS', margin, margin);
+    doc.setTextColor(30, 111, 251);
+    doc.text('ESCUDO VIAL - PLIEGO DE CÓDIGOS QR SOLOS', margin, margin);
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Dimensión QR: ${sizeCm}x${sizeCm} cm | ${qrs.length} códigos en lote | Fecha: ${new Date().toLocaleDateString()}`, margin, margin + 0.4);
+    doc.text(`Dimensión QR: ${sizeLabel} | Calidad: ${dpi} DPI | ${qrs.length} códigos en lote | Fecha: ${new Date().toLocaleDateString()}`, margin, margin + 0.4);
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {

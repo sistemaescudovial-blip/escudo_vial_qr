@@ -219,7 +219,7 @@ export default function ModalSos({ isOpen, onClose }) {
       const senderName = currentQr?.holder?.name || (selectedRole === 'titular' ? 'Conductor Titular' : 'Testigo en Vía');
       sendEmergencyChatMessage(
         liveEmergency.id, 
-        '🎤 Nota de voz enviada', 
+        'Nota de voz enviada', 
         'usuario', 
         senderName, 
         { audioUrl: audioDataUrl }
@@ -252,7 +252,7 @@ export default function ModalSos({ isOpen, onClose }) {
       const senderName = currentQr?.holder?.name || (selectedRole === 'titular' ? 'Conductor Titular' : 'Testigo en Vía');
       sendEmergencyChatMessage(
         liveEmergency.id, 
-        '📷 Foto de la emergencia adjuntada', 
+        'Foto de la emergencia adjuntada', 
         'usuario', 
         senderName, 
         { imageUrl: compressedDataUrl }
@@ -271,27 +271,27 @@ export default function ModalSos({ isOpen, onClose }) {
   };
 
   // Enlace para compartir en WhatsApp con familiares
-  const shareMessageText = `🚨 *Aviso de Emergencia - Escudo Vial 24/7*
+  const shareMessageText = `*Aviso de Emergencia - Escudo Vial 24/7*
 Hola familia, tuve un percance con mi vehículo. Ya la Central de Monitoreo coordinó la asistencia.
 
-📋 *Folio de Asistencia:* ${liveEmergency?.folio || confirmedEmergency?.folio || '#SOS-VENEZUELA'}
-📍 *Punto de Encuentro:* ${liveEmergency?.location?.address || confirmedEmergency?.location?.address || 'Ubicación transmitida en vivo'}
-🚙 *Estado:* ${liveEmergency?.status === 'en_camino' ? '¡Unidad de Auxilio Vial en Ruta hacia mi posición!' : 'En proceso de coordinación 24/7'}
+*Folio de Asistencia:* ${liveEmergency?.folio || confirmedEmergency?.folio || '#SOS-VENEZUELA'}
+*Punto de Encuentro:* ${liveEmergency?.location?.address || confirmedEmergency?.location?.address || 'Ubicación transmitida en vivo'}
+*Estado:* ${liveEmergency?.status === 'en_camino' ? '¡Unidad de Auxilio Vial en Ruta hacia mi posición!' : 'En proceso de coordinación 24/7'}
 
-📲 Pueden ver el estado en vivo y seguir el caso aquí:
+Pueden ver el estado en vivo y seguir el caso aquí:
 ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
 
   const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(shareMessageText)}`;
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSending) handleClose();
       }}
     >
       <div 
-        className="bg-white rounded-3xl p-4 sm:p-5 w-full max-w-sm sm:max-w-md flex flex-col items-center shadow-2xl relative border border-purple-100 max-h-[92vh] overflow-hidden animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-2xl p-4 sm:p-5 w-full max-w-sm sm:max-w-md flex flex-col items-center shadow-2xl relative border border-slate-200 max-h-[92vh] overflow-hidden animate-in zoom-in-95 duration-200"
       >
         {!showTrackingView ? (
           /* ======================================================== */
@@ -303,7 +303,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
               <ShieldAlert className="w-8 h-8 text-[#E53838]" />
             </div>
 
-            <h3 className="text-[#532C8C] font-extrabold text-[20px] tracking-tight leading-tight uppercase mb-1">
+            <h3 className="text-slate-900 font-extrabold text-[20px] tracking-tight leading-tight uppercase mb-1">
               ¿Quién está reportando?
             </h3>
             <p className="text-slate-600 text-[12px] leading-snug mb-4">
@@ -318,17 +318,17 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                 disabled={isSending}
                 className={`w-full p-3.5 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer shadow-sm relative border-2 ${
                   selectedRole === 'titular'
-                    ? 'border-[#532C8C] bg-purple-50/70 ring-2 ring-purple-300/30'
-                    : 'border-slate-200 bg-white hover:bg-purple-50'
+                    ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-100'
+                    : 'border-slate-200 bg-white hover:bg-slate-50'
                 }`}
               >
-                <div className="w-11 h-11 rounded-xl bg-[#532C8C] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                   <User className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="font-extrabold text-slate-900 text-[14px]">Soy el titular</span>
-                    <span className="bg-purple-200/80 text-[#532C8C] text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wider">
+                    <span className="bg-blue-50 text-slate-900 text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wider">
                       Predeterminado
                     </span>
                   </div>
@@ -337,7 +337,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                   </div>
                 </div>
                 {selectedRole === 'titular' && (
-                  <div className="w-6 h-6 rounded-full bg-[#532C8C] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                     <Check className="w-4 h-4" />
                   </div>
                 )}
@@ -350,12 +350,12 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                 disabled={isSending}
                 className={`w-full p-3.5 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer shadow-sm border-2 ${
                   selectedRole === 'tercero'
-                    ? 'border-[#00A896] bg-teal-50/70 ring-2 ring-teal-300/30'
-                    : 'border-slate-200 bg-white hover:bg-teal-50/70'
+                    ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-100'
+                    : 'border-slate-200 bg-white hover:bg-blue-50/50'
                 }`}
               >
-                <div className="w-11 h-11 rounded-xl bg-teal-100 text-[#00A896] flex items-center justify-center shrink-0">
-                  <Users className="w-6 h-6 text-[#00A896]" />
+                <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Users className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-slate-900 text-[14px]">Soy un tercero / testigo</div>
@@ -376,7 +376,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
               type="button"
               disabled={isSending}
               onClick={() => handleConfirm(selectedRole)}
-              className="w-full mt-4 bg-gradient-to-r from-[#E53838] to-[#c72626] hover:brightness-110 py-3.5 rounded-2xl text-white font-extrabold text-[13.5px] uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-rose-500/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full mt-4 bg-rose-600 hover:bg-rose-700 hover:brightness-110 py-3.5 rounded-2xl text-white font-extrabold text-[13.5px] uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-rose-500/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isSending ? (
                 <>
@@ -418,7 +418,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <Truck className="w-4 h-4 text-[#00A896]" />
+                  <Truck className="w-4 h-4 text-blue-600" />
                   <span>Estado del Auxilio</span>
                 </button>
 
@@ -427,7 +427,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                   onClick={() => setActiveTab('chat')}
                   className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer relative ${
                     activeTab === 'chat'
-                      ? 'bg-gradient-to-r from-[#532C8C] to-purple-800 text-white shadow-xs'
+                      ? 'bg-blue-600 text-white shadow-xs'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
@@ -435,7 +435,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                   <span>Chat con Central</span>
                   {chatMessagesCount > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      activeTab === 'chat' ? 'bg-emerald-500 text-white' : 'bg-[#532C8C] text-white'
+                      activeTab === 'chat' ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white'
                     }`}>
                       {chatMessagesCount}
                     </span>
@@ -451,14 +451,14 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                   /* ¡UNIDAD EN CAMINO! */
                   <>
                     <div className="relative flex items-center justify-center my-2">
-                      <span className="animate-ping absolute inline-flex h-20 w-20 rounded-full bg-teal-400 opacity-40"></span>
-                      <div className="relative w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#00A896] via-teal-500 to-emerald-400 text-white flex items-center justify-center shadow-xl shadow-teal-500/30 border-2 border-white">
+                      
+                      <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#00A896] via-teal-500 to-emerald-400 text-white flex items-center justify-center shadow-xl shadow-teal-500/30 border-2 border-white">
                         <Truck className="w-9 h-9 text-white" />
                       </div>
                     </div>
 
                     <div className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-[10.5px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-1 border border-emerald-200">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      
                       <span>¡Unidad en Ruta hacia ti!</span>
                     </div>
 
@@ -472,15 +472,15 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                     {/* Línea de Progreso Activa */}
                     <div className="w-full grid grid-cols-3 gap-1 my-1">
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[11px] font-bold">✓</div>
+                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center"><Check className="w-3.5 h-3.5" /></div>
                         <span className="text-[9px] font-extrabold text-emerald-800 mt-1">Registrada</span>
                       </div>
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[11px] font-bold">✓</div>
+                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center"><Check className="w-3.5 h-3.5" /></div>
                         <span className="text-[9px] font-extrabold text-emerald-800 mt-1">Asignada</span>
                       </div>
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 rounded-full bg-[#00A896] text-white flex items-center justify-center text-[11px] font-bold animate-pulse">
+                        <div className="w-6 h-6 rounded-full bg-[#00A896] text-white flex items-center justify-center text-[11px] font-bold">
                           <Truck className="w-3.5 h-3.5" />
                         </div>
                         <span className="text-[9px] font-extrabold text-teal-800 mt-1">En Ruta</span>
@@ -488,17 +488,17 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                     </div>
 
                     {/* Tarjeta de Detalles del Despacho */}
-                    <div className="w-full bg-teal-50/70 border border-teal-200 rounded-2xl p-3 text-left flex flex-col gap-2 mt-2">
+                    <div className="w-full bg-blue-50/50 border border-teal-200 rounded-2xl p-3 text-left flex flex-col gap-2 mt-2">
                       <div className="flex items-center justify-between border-b border-teal-200/60 pb-2">
                         <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider">Folio Oficial:</span>
-                        <span className="font-mono text-[12px] font-black text-[#532C8C] bg-white px-2 py-0.5 rounded-md border border-purple-200">
+                        <span className="text-[12px] font-black text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
                           {liveEmergency?.folio || confirmedEmergency?.folio || '#SOS-VENEZUELA'}
                         </span>
                       </div>
 
                       <div className="flex items-start gap-2 border-b border-teal-200/60 pb-2">
-                        <div className="w-6 h-6 rounded-lg bg-teal-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <Truck className="w-4 h-4 text-[#00A896]" />
+                        <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 mt-0.5">
+                          <Truck className="w-4 h-4 text-blue-600" />
                         </div>
                         <div className="text-[11.5px] leading-tight">
                           <span className="font-bold text-slate-900 block">Recurso Despachado:</span>
@@ -544,7 +544,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                     <button
                       type="button"
                       onClick={() => setActiveTab('chat')}
-                      className="w-full mt-2 bg-gradient-to-r from-[#532C8C] via-purple-800 to-[#532C8C] text-white p-3 rounded-2xl flex items-center justify-between shadow-md active:scale-98 transition-all cursor-pointer"
+                      className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-2xl flex items-center justify-between shadow-sm active:scale-98 transition-all cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 text-left">
                         <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-teal-300">
@@ -581,14 +581,14 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                   /* ESPERANDO EN TORRE DE CONTROL (Radar) */
                   <>
                     <div className="relative flex items-center justify-center my-2">
-                      <span className="animate-ping absolute inline-flex h-20 w-20 rounded-full bg-purple-400 opacity-30"></span>
-                      <div className="relative w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#532C8C] to-[#00A896] text-white flex items-center justify-center shadow-xl shadow-purple-900/30 border-2 border-white">
+                      
+                      <div className="relative w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/25 border-2 border-white">
                         <Radio className="w-8 h-8 text-white animate-spin" style={{ animationDuration: '4s' }} />
                       </div>
                     </div>
 
-                    <div className="inline-flex items-center gap-1.5 bg-purple-100 text-[#532C8C] text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-1 border border-purple-200">
-                      <span className="w-2 h-2 rounded-full bg-[#532C8C] animate-ping"></span>
+                    <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-1 border border-blue-200">
+                      
                       <span>Transmisión en Vivo a Torre 24/7</span>
                     </div>
 
@@ -614,7 +614,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                     <button
                       type="button"
                       onClick={() => setActiveTab('chat')}
-                      className="w-full mt-2 bg-gradient-to-r from-[#532C8C] to-purple-800 text-white p-3 rounded-2xl flex items-center justify-between shadow-md active:scale-98 transition-all cursor-pointer"
+                      className="w-full mt-2 bg-blue-600 text-white p-3 rounded-2xl flex items-center justify-between shadow-md active:scale-98 transition-all cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 text-left">
                         <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-teal-300">
@@ -653,7 +653,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
               <div className="w-full flex-1 flex flex-col justify-between overflow-hidden bg-slate-50/80 rounded-2xl border border-slate-200 text-left">
                 
                 {/* Cabecera del Chat */}
-                <div className="bg-[#532C8C] text-white px-3.5 py-2.5 flex items-center justify-between shadow-xs shrink-0">
+                <div className="bg-blue-600 text-white px-3.5 py-2.5 flex items-center justify-between shadow-xs shrink-0">
                   <div className="flex items-center gap-2.5">
                     <button
                       type="button"
@@ -671,13 +671,13 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                         Central de Monitoreo 24/7
                       </h4>
                       <p className="text-[10px] text-emerald-300 flex items-center gap-1 font-semibold leading-none mt-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        
                         Operador Alpha en línea
                       </p>
                     </div>
                   </div>
 
-                  <span className="font-mono text-[10px] font-black bg-white/15 px-2 py-0.5 rounded-md text-white">
+                  <span className="text-[10px] font-black bg-white/15 px-2 py-0.5 rounded-md text-white">
                     {liveEmergency?.folio || '#SOS-VENEZUELA'}
                   </span>
                 </div>
@@ -749,8 +749,8 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                       // Mensaje de la Central (Izquierda)
                       return (
                         <div key={msg.id || idx} className="flex flex-col items-start">
-                          <div className="flex items-center gap-1 text-[9.5px] text-[#532C8C] font-extrabold mb-0.5 px-1">
-                            <Shield className="w-3 h-3 text-[#532C8C]" />
+                          <div className="flex items-center gap-1 text-[9.5px] text-slate-900 font-extrabold mb-0.5 px-1">
+                            <Shield className="w-3 h-3 text-slate-900" />
                             <span>Central 24/7 • {msg.time || 'Ahora'}</span>
                           </div>
                           <div className="bg-white text-slate-900 border border-slate-200 rounded-2xl rounded-tl-xs px-3.5 py-2 max-w-[85%] shadow-xs text-xs leading-relaxed font-medium">
@@ -783,16 +783,16 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                 {/* Barra de Respuestas Rápidas */}
                 <div className="bg-white/90 border-t border-slate-200 p-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
                   {[
-                    '📍 Estoy orillado a la derecha',
-                    '⚠️ Intermitentes encendidas',
-                    '👀 Ya veo llegar la grúa',
-                    '⏱️ ¿Cuánto tiempo estimado?'
+                    'Estoy orillado a la derecha',
+                    'Intermitentes encendidas',
+                    'Ya veo llegar la grúa',
+                    '¿Cuánto tiempo estimado?'
                   ].map((chip, i) => (
                     <button
                       key={i}
                       type="button"
                       onClick={() => handleSendMessage(chip)}
-                      className="bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-slate-700 text-[11px] px-2.5 py-1 rounded-xl whitespace-nowrap font-medium transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0"
+                      className="bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-teal-300 text-slate-700 text-[11px] px-2.5 py-1 rounded-xl whitespace-nowrap font-medium transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0"
                     >
                       {chip}
                     </button>
@@ -821,7 +821,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploadingMedia || isRecording}
-                    className="text-slate-500 hover:text-[#00A896] p-2 rounded-xl transition-all cursor-pointer active:scale-95 disabled:opacity-40"
+                    className="text-slate-500 hover:text-blue-600 p-2 rounded-xl transition-all cursor-pointer active:scale-95 disabled:opacity-40"
                     title="Tomar o adjuntar foto del choque o falla"
                   >
                     <Camera className="w-5 h-5" />
@@ -829,10 +829,10 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
 
                   {/* Estado de Grabación de Audio */}
                   {isRecording ? (
-                    <div className="flex-1 flex items-center justify-between bg-rose-50 border border-rose-200 rounded-xl px-3 py-1.5 animate-pulse">
+                    <div className="flex-1 flex items-center justify-between bg-rose-50 border border-rose-200 rounded-xl px-3 py-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
-                        <span className="text-xs font-bold text-rose-700 font-mono">
+                        
+                        <span className="text-xs font-bold text-rose-700 ">
                           00:{recordingSeconds < 10 ? `0${recordingSeconds}` : recordingSeconds} Grabando...
                         </span>
                       </div>
@@ -863,7 +863,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                         onChange={(e) => setChatMessage(e.target.value)}
                         placeholder={isUploadingMedia ? "Comprimiendo archivo..." : "Escribe a la central..."}
                         disabled={isUploadingMedia}
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#00A896] focus:bg-white transition-all"
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all"
                       />
 
                       {/* Botón de Micrófono para Nota de Voz */}

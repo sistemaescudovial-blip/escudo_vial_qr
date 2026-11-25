@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Local environment & Vercel cache
+.vercel/
+.env.local
+.env.*.local
+*.local
