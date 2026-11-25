@@ -13,7 +13,7 @@ export default function ActionCards({
       {/* Tarjeta 1: Central Médica 24/7 */}
       <article className="bg-white rounded-2xl p-4 shadow-xs border border-slate-200/90 relative overflow-hidden transition-all hover:border-slate-300">
         <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-purple-50 text-[#4B2C84] flex items-center justify-center shrink-0 border border-purple-100 shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-[#16A085]/10 text-[#16A085] flex items-center justify-center shrink-0 border border-[#16A085]/20 shadow-2xs">
             <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: '"FILL" 1' }}>
               medical_services
             </span>
@@ -35,7 +35,7 @@ export default function ActionCards({
         <button
           type="button"
           onClick={onOpenTelemedicinaModal}
-          className="mt-3 w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer uppercase tracking-wider"
+          className="mt-3 w-full bg-[#16A085] hover:bg-[#138d75] active:scale-[0.99] text-white font-bold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm shadow-[#16A085]/25 cursor-pointer uppercase tracking-wider"
         >
           <span className="material-symbols-outlined text-[16px]">info</span>
           <span>Ver Beneficios</span>
