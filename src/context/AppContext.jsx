@@ -292,14 +292,20 @@ export function AppProvider({ children }) {
             setEmergencies(prev => prev.map(e => {
               if (e.id === updated.id) {
                 if (Array.isArray(updated.notes) && updated.notes.length > (e.notes?.length || 0)) {
-                  playChatAudio();
+                  const latestNote = updated.notes[0];
+                  if (latestNote?.text?.includes('Alerta S.O.S') || updated.status === 'critico') {
+                    setUnreadAlert(updated);
+                    playEmergencyAudio();
+                  } else {
+                    playChatAudio();
+                  }
                 }
                 return updated;
               }
               return e;
             }));
-            // SÓLO alertar como nueva si el estatus cambió de otro estado a 'critico' (reapertura)
-            if (payload.old && payload.old.status && payload.old.status !== 'critico' && updated.status === 'critico') {
+            // Alertar como nueva o reiterada si el estatus es 'critico'
+            if (updated.status === 'critico') {
               setUnreadAlert(updated);
               playEmergencyAudio();
             }
@@ -404,12 +410,16 @@ export function AppProvider({ children }) {
       channel = new BroadcastChannel('escudo_vial_sync');
       channel.onmessage = (event) => {
         const { type, data } = event.data;
-        if (type === 'NEW_EMERGENCY') {
+        if (type === 'NEW_EMERGENCY' || type === 'REITERATE_EMERGENCY') {
           setEmergencies(prev => [data, ...prev.filter(e => e.id !== data.id)]);
           setUnreadAlert(data);
           playEmergencyAudio();
         } else if (type === 'UPDATE_EMERGENCY') {
           setEmergencies(prev => prev.map(e => e.id === data.id ? data : e));
+          if (data.status === 'critico') {
+            setUnreadAlert(data);
+            playEmergencyAudio();
+          }
         } else if (type === 'NEW_REPORT') {
           setReports(prev => [data, ...prev.filter(r => r.id !== data.id)]);
         } else if (type === 'UPDATE_QR') {
@@ -516,7 +526,7 @@ export function AppProvider({ children }) {
     // Sincronización transparente con Supabase en la Nube
     if (isSupabaseConfigured && supabase) {
       try {
-        if (type === 'NEW_EMERGENCY' || type === 'UPDATE_EMERGENCY') {
+        if (type === 'NEW_EMERGENCY' || type === 'UPDATE_EMERGENCY' || type === 'REITERATE_EMERGENCY') {
           const dbEmg = mapEmergencyToDb(payload);
           if (dbEmg) supabase.from('emergencies').upsert(dbEmg).then(null, (e) => console.warn('Supabase emg error:', e));
         } else if (type === 'DELETE_EMERGENCY') {
@@ -574,11 +584,12 @@ export function AppProvider({ children }) {
       const existingNotes = Array.isArray(existingActive.notes) ? existingActive.notes : [];
       const updatedEmergency = {
         ...existingActive,
+        status: 'critico',
         location: locationData,
         notes: [
           {
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            text: `Alerta S.O.S reiterada por el usuario en ${locationData.address}`
+            text: `Alerta S.O.S reiterada por ${reporterType === 'titular' ? 'el conductor titular' : 'un testigo'} en ${locationData.address}`
           },
           ...existingNotes
         ]
@@ -597,7 +608,7 @@ export function AppProvider({ children }) {
         }
       }
 
-      syncServer('UPDATE_EMERGENCY', updatedEmergency);
+      syncServer('REITERATE_EMERGENCY', updatedEmergency);
       return updatedEmergency;
     }
 

@@ -1,8 +1,13 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 
-export default function SosHero({ onOpenSosModal }) {
-  const { activeIncident } = useApp();
+export default function SosHero({ onOpenSosModal, activeIncident: propActiveIncident }) {
+  const { emergencies, activeSku } = useApp();
+  
+  // Detectar incidente activo por prop o por lista de emergencias
+  const activeIncident = propActiveIncident || (emergencies || []).find(e => 
+    e?.sku && activeSku && e.sku.toUpperCase() === activeSku.replace(/[#-]/g, '').toUpperCase() && e.status !== 'resuelto'
+  );
 
   const isEnCamino = activeIncident?.status === 'en_camino';
   const isActive = Boolean(activeIncident && !isEnCamino);
@@ -15,7 +20,13 @@ export default function SosHero({ onOpenSosModal }) {
         // Ignorar si el navegador bloquea la vibración
       }
     }
-    onOpenSosModal();
+    // Si ya hay alerta activa (Azul Eléctrico o Verde), abre directamente el seguimiento o chat
+    if (activeIncident) {
+      onOpenSosModal(isEnCamino ? 'auxilio' : 'chat');
+    } else {
+      // Si está en reposo (Rojo), abre el prompt de titular o tercero
+      onOpenSosModal('prompt');
+    }
   };
 
   // Configuración dinámica según el estado del auxilio
@@ -53,18 +64,18 @@ export default function SosHero({ onOpenSosModal }) {
     };
   } else if (isActive) {
     config = {
-      gradient: 'radial-gradient(circle at 45% 25%, rgb(126, 87, 194) 0%, rgb(75, 44, 132) 42%, rgb(56, 30, 105) 78%, rgb(38, 17, 74) 100%)',
-      shadowColor: '#26114a',
-      glowColor: 'rgba(75, 44, 132, 0.45)',
-      radarColor1: 'bg-[#4B2C84]/25',
-      radarColor2: 'bg-[#4B2C84]/15',
-      radarColor3: 'bg-[#4B2C84]/10',
-      coronaStroke: '#4B2C84',
+      gradient: 'radial-gradient(circle at 45% 25%, rgb(96, 165, 250) 0%, rgb(37, 99, 235) 42%, rgb(29, 78, 216) 78%, rgb(30, 58, 138) 100%)',
+      shadowColor: '#172554',
+      glowColor: 'rgba(37, 99, 235, 0.55)',
+      radarColor1: 'bg-blue-500/25',
+      radarColor2: 'bg-blue-500/15',
+      radarColor3: 'bg-blue-600/10',
+      coronaStroke: '#2563EB',
       icon: 'sensors',
       title: 'S.O.S ACTIVO',
       subtitle: 'TRANSMITIENDO EN VIVO',
       heading: 'ALERTA EN PROCESO DE ATENCIÓN',
-      headingClass: 'text-[#4B2C84]',
+      headingClass: 'text-blue-600 font-extrabold',
       description: `Folio ${activeIncident.folio || 'S.O.S'}: Torre de control coordinando respuesta inmediata en tus coordenadas.`,
     };
   }

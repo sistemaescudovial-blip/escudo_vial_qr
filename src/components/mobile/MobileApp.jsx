@@ -220,11 +220,14 @@ export default function MobileApp({ showSimulatorBar = false }) {
                 </div>
               )}
 
-              {/* Botón de Pánico Central S.O.S - Al hacer clic siempre pregunta titular o tercero */}
-              <SosHero onOpenSosModal={() => {
-                setSosModalMode('prompt');
-                setIsSosModalOpen(true);
-              }} />
+              {/* Botón de Pánico Central S.O.S - Dinámico según estado */}
+              <SosHero 
+                activeIncident={activeIncident}
+                onOpenSosModal={(mode = 'prompt') => {
+                  setSosModalMode(mode);
+                  setIsSosModalOpen(true);
+                }} 
+              />
 
               {/* Tarjetas de Asistencia y QR */}
               <ActionCards 

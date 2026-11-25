@@ -100,8 +100,14 @@ export default function ModalSos({ isOpen, onClose, initialMode = 'prompt' }) {
         if (existingActiveEmg) {
           setConfirmedEmergency(existingActiveEmg);
         }
+      } else if (initialMode === 'auxilio') {
+        setIsConfirmed(true);
+        setActiveTab('auxilio');
+        if (existingActiveEmg) {
+          setConfirmedEmergency(existingActiveEmg);
+        }
       } else {
-        // Al tocar el botón central S.O.S: SIEMPRE se muestra la selección de titular o tercero
+        // Al tocar el botón central S.O.S en reposo: SIEMPRE se muestra la selección de titular o tercero
         setIsConfirmed(false);
         setActiveTab('auxilio');
         if (existingActiveEmg) {
