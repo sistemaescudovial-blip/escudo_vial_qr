@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
+import { svg2pdf } from './svg2pdf.js';
 import rawTemplateSvg from '../assets/sticker_template.svg?raw';
 
 /**
@@ -301,7 +302,6 @@ const CUT_CONTOURS_NORMALIZED = {
 /**
  * Registra una tinta directa (Spot Color / Volltonfarbe) llamada exactamente
  * /CutContour en modo CMYK (C:0, M:100, Y:0, K:0) dentro del catálogo /Resources del PDF.
- * Se intercepta el cierre de /XObject para no romper la declaración de imágenes (addImage).
  */
 function registerCutContourSpotColor(doc) {
   let csObjId = null;
@@ -314,40 +314,28 @@ function registerCutContourSpotColor(doc) {
     doc.internal.write('endobj');
   });
 
-  let inXObject = false;
-  let colorSpaceInjected = false;
   const originalWrite = doc.internal.write;
+  let colorSpaceInjected = false;
 
   doc.internal.write = function (...args) {
     const str = args.length === 1 ? String(args[0]) : args.map(String).join(' ');
+    originalWrite.apply(this, args);
 
-    if (str.includes('/XObject <<')) {
-      inXObject = true;
-      colorSpaceInjected = false;
-      return originalWrite.apply(this, args);
-    }
-
-    if (inXObject && str.trim() === '>>' && !colorSpaceInjected) {
-      inXObject = false;
+    if (csObjId && !colorSpaceInjected && (str.includes('/Resources <<') || str.includes('/Resources\n<<'))) {
       colorSpaceInjected = true;
-      originalWrite.apply(this, args);
-      if (csObjId) {
-        originalWrite.call(this, `/ColorSpace << /CS_CutContour ${csObjId} 0 R >>`);
-      }
-      return;
+      originalWrite.call(this, `/ColorSpace << /CS_CutContour ${csObjId} 0 R >>`);
     }
-
-    return originalWrite.apply(this, args);
   };
 }
 
 /**
  * Dibuja exclusivamente los trazos vectoriales de corte (externo e internos)
  * con la tinta directa CutContour (100% tinta, CMYK 0/100/0/0, 0.25pt hairline).
+ * Si alguna o ambas no están activas en printConfig, no se dibuja ninguna línea de ese tipo.
  */
 function drawCutContoursToPdf(doc, originXMm, originYMm, widthMm, heightMm, printConfig = {}) {
-  const drawExt = printConfig.cutExternal !== false;
-  const drawInt = printConfig.cutInternal !== false;
+  const drawExt = Boolean(printConfig.cutExternal);
+  const drawInt = Boolean(printConfig.cutInternal);
   if (!drawExt && !drawInt) return;
 
   const boxes = [];
@@ -358,7 +346,8 @@ function drawCutContoursToPdf(doc, originXMm, originYMm, widthMm, heightMm, prin
   }
 
   doc.saveGraphicsState();
-  doc.internal.write('/CS_CutContour CS 1 SCN');
+  doc.setDrawColor(255, 0, 255); // Magenta visible 100% CMYK (#FF00FF)
+  doc.internal.write('/CS_CutContour CS 1 SCN'); // Spot Color Separation para RIP / plotter
   doc.setLineWidth(0.088); // 0.25 pt hairline estándar para RIP / plotter
   for (const b of boxes) {
     doc.roundedRect(
@@ -376,22 +365,14 @@ function drawCutContoursToPdf(doc, originXMm, originYMm, widthMm, heightMm, prin
 
 /**
  * Descarga individual en formato PDF listo para corte según tamaño configurado,
- * con trazos vectoriales exclusivos en tinta directa CutContour (CMYK 0,100,0,0)
+ * 100% vectorial nativo (cero pixeles, svg2pdf) con trazos vectoriales exclusivos
+ * en tinta directa CutContour (CMYK 0,100,0,0)
  */
 export async function exportOfficialStickerPdf(sku, targetUrl, printConfig = {}) {
   const cleanSku = (sku || 'EV3362VE').replace(/[#-]/g, '').toUpperCase();
   const { widthMm, heightMm } = resolveTemplateDimensionsMm(printConfig);
   const isNoQr = printConfig.includeQr === false;
   const fileLabel = isNoQr ? `Plantilla_Base_SinQR_${widthMm}x${heightMm}mm` : `Sticker_Imprenta_${cleanSku}_${widthMm}x${heightMm}mm`;
-
-  // Rasterizar únicamente la gráfica sin marcas de corte (las marcas van como vector CutContour)
-  const canvas = document.createElement('canvas');
-  await renderOfficialStickerToCanvas(cleanSku, targetUrl, canvas, {
-    ...printConfig,
-    cutExternal: false,
-    cutInternal: false
-  });
-  const pngData = canvas.toDataURL('image/png');
 
   const doc = new jsPDF({
     orientation: widthMm > heightMm ? 'landscape' : 'portrait',
@@ -400,14 +381,30 @@ export async function exportOfficialStickerPdf(sku, targetUrl, printConfig = {})
   });
   registerCutContourSpotColor(doc);
 
-  doc.addImage(pngData, 'PNG', 0, 0, widthMm, heightMm, undefined, 'FAST');
+  // Renderizado 100% vectorial sin marcas de corte en la gráfica (para aplicarlas con tinta directa)
+  const artworkSvg = generateOfficialStickerSvg(cleanSku, targetUrl, {
+    ...printConfig,
+    cutExternal: false,
+    cutInternal: false,
+    cmykMode: true
+  });
+  const svgDoc = new DOMParser().parseFromString(artworkSvg, 'image/svg+xml');
+  await svg2pdf(svgDoc.documentElement, doc, {
+    x: 0,
+    y: 0,
+    width: widthMm,
+    height: heightMm
+  });
+
+  // Trazos vectoriales de corte con tinta directa CutContour (solo si están activos)
   drawCutContoursToPdf(doc, 0, 0, widthMm, heightMm, printConfig);
   doc.save(`${fileLabel}.pdf`);
 }
 
 /**
  * Construye el archivo individual (Blob + nombre) para una plantilla en el formato indicado ('png' | 'jpg' | 'svg' | 'pdf').
- * En PDF, los vectores de corte van exclusivamente como Spot Color /CutContour CMYK (0,100,0,0).
+ * En PDF y SVG, la salida es 100% vectorial nativa sin rasterización.
+ * En JPG y PNG, se rasteriza a 300 DPI mediante Canvas.
  */
 async function buildOfficialStickerAsset(qr, index, getBaseUrl, printConfig = {}, format = 'jpg') {
   const { widthMm, heightMm } = resolveTemplateDimensionsMm(printConfig);
@@ -427,20 +424,27 @@ async function buildOfficialStickerAsset(qr, index, getBaseUrl, printConfig = {}
   }
 
   if (format === 'pdf') {
-    const canvas = document.createElement('canvas');
-    await renderOfficialStickerToCanvas(cleanSku, targetUrl, canvas, {
-      ...printConfig,
-      cutExternal: false,
-      cutInternal: false
-    });
-    const pngData = canvas.toDataURL('image/png');
     const doc = new jsPDF({
       orientation: widthMm > heightMm ? 'landscape' : 'portrait',
       unit: 'mm',
       format: [widthMm, heightMm]
     });
     registerCutContourSpotColor(doc);
-    doc.addImage(pngData, 'PNG', 0, 0, widthMm, heightMm, undefined, 'FAST');
+
+    const artworkSvg = generateOfficialStickerSvg(cleanSku, targetUrl, {
+      ...printConfig,
+      cutExternal: false,
+      cutInternal: false,
+      cmykMode: true
+    });
+    const svgDoc = new DOMParser().parseFromString(artworkSvg, 'image/svg+xml');
+    await svg2pdf(svgDoc.documentElement, doc, {
+      x: 0,
+      y: 0,
+      width: widthMm,
+      height: heightMm
+    });
+
     drawCutContoursToPdf(doc, 0, 0, widthMm, heightMm, printConfig);
     return {
       filename: `${baseName}.pdf`,
@@ -583,8 +587,8 @@ export function convertSvgToCmyk(svgString) {
 }
 
 /**
- * Exporta un lienzo / bobina completa en formato PDF en alta resolución con vectores de corte
- * exclusivos en tinta directa Spot /CutContour CMYK (0,100,0,0).
+ * Exporta un lienzo / bobina completa en formato PDF 100% vectorial nativo (cero pixeles, svg2pdf)
+ * con vectores de corte exclusivos en tinta directa Spot /CutContour CMYK (0,100,0,0) solo si están activos.
  */
 export async function exportCanvasRollPdf(qrs, getBaseUrl, canvasConfig = {}, printConfig = {}) {
   const layout = calculateCanvasRollLayout(canvasConfig, printConfig);
@@ -599,9 +603,18 @@ export async function exportCanvasRollPdf(qrs, getBaseUrl, canvasConfig = {}, pr
   });
   registerCutContourSpotColor(doc);
 
-  const canvas = document.createElement('canvas');
+  // Fondo blanco vectorial para todo el pliego
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, canvasWidthMm, canvasHeightMm, 'F');
+
   const artworkConfig = { ...printConfig, cutExternal: false, cutInternal: false, cmykMode: true };
-  let cachedBlankImg = null;
+  const parser = new DOMParser();
+
+  let cachedSvgElement = null;
+  if (isNoQr) {
+    const blankSvg = generateOfficialStickerSvg('BASE', getBaseUrl(), artworkConfig);
+    cachedSvgElement = parser.parseFromString(blankSvg, 'image/svg+xml').documentElement;
+  }
 
   for (let i = 0; i < totalStickers; i++) {
     const col = i % cols;
@@ -610,25 +623,31 @@ export async function exportCanvasRollPdf(qrs, getBaseUrl, canvasConfig = {}, pr
     const xMm = offsetX + col * (stickerWidth + gapXMm);
     const yMm = marginMm + row * (stickerHeight + gapYMm);
 
-    let imgData = cachedBlankImg;
-    if (!isNoQr || !cachedBlankImg) {
+    let svgEl = cachedSvgElement;
+    if (!isNoQr) {
       const q = qrs[i] || qrs[i % qrs.length] || { sku: `EV${String(1000 + i).slice(-4)}VE` };
       const cleanSku = (q.sku || 'EV3362VE').replace(/[#-]/g, '').toUpperCase();
       const targetUrl = `${getBaseUrl()}/v/${cleanSku}`;
-      await renderOfficialStickerToCanvas(cleanSku, targetUrl, canvas, artworkConfig);
-      imgData = canvas.toDataURL('image/png');
-      if (isNoQr) cachedBlankImg = imgData;
+      const stickerSvg = generateOfficialStickerSvg(cleanSku, targetUrl, artworkConfig);
+      svgEl = parser.parseFromString(stickerSvg, 'image/svg+xml').documentElement;
     }
 
-    doc.addImage(imgData, 'PNG', xMm, yMm, stickerWidth, stickerHeight, undefined, 'FAST');
-    // Trazos vectoriales exclusivos en tinta directa Spot /CutContour (CMYK 0,100,0,0)
+    // Dibujar sticker 100% vectorial nativo directamente en PDF (cero rasterización)
+    await svg2pdf(svgEl, doc, {
+      x: xMm,
+      y: yMm,
+      width: stickerWidth,
+      height: stickerHeight
+    });
+
+    // Trazos vectoriales de corte con tinta directa CutContour (solo si están activos en printConfig)
     drawCutContoursToPdf(doc, xMm, yMm, stickerWidth, stickerHeight, printConfig);
   }
 
-  // Título y datos técnicos de prepress en DeviceCMYK (solo negro K:60%, nunca CutContour)
+  // Título y datos técnicos de prepress en DeviceCMYK / Grayscale
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
-  doc.setTextColor(0, 0, 0, 0.6);
+  doc.setTextColor(100, 100, 100);
   doc.text(
     `ESCUDO VIAL 24/7 - LIENZO BOBINA PREPRESS - ${totalStickers} UNIDADES (${cols} cols x ${rows} filas) - ${canvasWidthMm}x${Math.round(canvasHeightMm)}mm - CutContour Spot CMYK (0,100,0,0)`,
     offsetX,
