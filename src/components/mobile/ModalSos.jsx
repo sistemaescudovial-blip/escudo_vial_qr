@@ -465,17 +465,15 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
             {activeTab === 'auxilio' ? (
               <div className="w-full flex flex-col items-center overflow-y-auto pr-0.5 text-center">
                 {liveEmergency?.status === 'en_camino' ? (
-                  /* ¡UNIDAD EN CAMINO! */
+                  /* ¡UNIDAD EN CAMINO - VISTA LIMPIA Y DIRECTA! */
                   <>
                     <div className="relative flex items-center justify-center my-2">
-                      
                       <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#00A896] via-teal-500 to-emerald-400 text-white flex items-center justify-center shadow-xl shadow-teal-500/30 border-2 border-white">
                         <Truck className="w-9 h-9 text-white" />
                       </div>
                     </div>
 
                     <div className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-[10.5px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-1 border border-emerald-200">
-                      
                       <span>¡Unidad en Ruta hacia ti!</span>
                     </div>
 
@@ -486,100 +484,55 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                       La Torre de Control ha coordinado y despachado la unidad para brindarte asistencia inmediata.
                     </p>
 
-                    {/* Línea de Progreso Activa */}
-                    <div className="w-full grid grid-cols-3 gap-1 my-1">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center"><Check className="w-3.5 h-3.5" /></div>
-                        <span className="text-[9px] font-extrabold text-emerald-800 mt-1">Registrada</span>
-                      </div>
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center"><Check className="w-3.5 h-3.5" /></div>
-                        <span className="text-[9px] font-extrabold text-emerald-800 mt-1">Asignada</span>
-                      </div>
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 rounded-full bg-[#00A896] text-white flex items-center justify-center text-[11px] font-bold">
-                          <Truck className="w-3.5 h-3.5" />
+                    {/* Línea de Progreso Activa Bien Definida */}
+                    <div className="w-full max-w-xs mx-auto py-3 px-2">
+                      <div className="relative flex items-center justify-between">
+                        {/* Línea conectora de fondo */}
+                        <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-1 bg-emerald-200 z-0" />
+                        
+                        {/* Paso 1: Registrada */}
+                        <div className="relative z-10 flex flex-col items-center">
+                          <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm border-2 border-white">
+                            <Check className="w-5 h-5 stroke-[2.5]" />
+                          </div>
+                          <span className="text-[11px] font-extrabold text-emerald-800 mt-1.5">Registrada</span>
                         </div>
-                        <span className="text-[9px] font-extrabold text-teal-800 mt-1">En Ruta</span>
-                      </div>
-                    </div>
 
-                    {/* Tarjeta de Detalles del Despacho */}
-                    <div className="w-full bg-blue-50/50 border border-teal-200 rounded-2xl p-3 text-left flex flex-col gap-2 mt-2">
-                      <div className="flex items-center justify-between border-b border-teal-200/60 pb-2">
-                        <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider">Folio Oficial:</span>
-                        <span className="text-[12px] font-black text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-                          {liveEmergency?.folio || confirmedEmergency?.folio || '#SOS-VENEZUELA'}
-                        </span>
-                      </div>
+                        {/* Paso 2: Asignada */}
+                        <div className="relative z-10 flex flex-col items-center">
+                          <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm border-2 border-white">
+                            <Check className="w-5 h-5 stroke-[2.5]" />
+                          </div>
+                          <span className="text-[11px] font-extrabold text-emerald-800 mt-1.5">Asignada</span>
+                        </div>
 
-                      <div className="flex items-start gap-2 border-b border-teal-200/60 pb-2">
-                        <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 mt-0.5">
-                          <Truck className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div className="text-[11.5px] leading-tight">
-                          <span className="font-bold text-slate-900 block">Recurso Despachado:</span>
-                          <span className="font-black text-teal-900 text-xs">
-                            {liveEmergency?.dispatchedUnit || 'Unidad Oficial de Auxilio Vial 24/7'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <MapPin className="w-4 h-4 text-rose-500" />
-                        </div>
-                        <div className="text-[11.5px] leading-tight">
-                          <span className="font-bold text-slate-900 block">Punto de Encuentro:</span>
-                          <span className="text-slate-600 text-[11px]">{liveEmergency?.location?.address || 'Ubicación satelital transmitida'}</span>
+                        {/* Paso 3: En Ruta */}
+                        <div className="relative z-10 flex flex-col items-center">
+                          <div className="w-9 h-9 rounded-full bg-[#00A896] text-white flex items-center justify-center shadow-md shadow-teal-500/30 border-2 border-white animate-pulse">
+                            <Truck className="w-5 h-5" />
+                          </div>
+                          <span className="text-[11px] font-black text-teal-900 mt-1.5">En Ruta</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* NOVEDAD 1: Botón WhatsApp para Compartir con Familiares */}
-                    <a
-                      href={whatsappShareUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full mt-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white p-3 rounded-2xl flex items-center justify-between shadow-md shadow-emerald-600/20 active:scale-98 transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5 text-left">
-                        <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white">
-                          <Share2 className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="font-black text-xs block">Compartir con mis Familiares</span>
-                          <span className="text-[10px] text-white/90 font-medium">Avisar por WhatsApp con enlace de seguimiento</span>
-                        </div>
-                      </div>
-                      <span className="bg-white text-[#25D366] text-[10px] font-black px-2 py-0.5 rounded-full shadow-2xs">
-                        WhatsApp
-                      </span>
-                    </a>
-
-                    {/* Banner Llamativo para Abrir el Chat Directo */}
+                    {/* Botón Destacado: Chat con la Central */}
                     <button
                       type="button"
                       onClick={() => setActiveTab('chat')}
-                      className="w-full mt-2 bg-[#4B2C84] hover:bg-[#3d236b] text-white p-3 rounded-2xl flex items-center justify-between shadow-sm active:scale-98 transition-all cursor-pointer"
+                      className="w-full mt-3 bg-[#4B2C84] hover:bg-[#3d236b] text-white p-3.5 rounded-2xl flex items-center justify-between shadow-md active:scale-98 transition-all cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5 text-left">
-                        <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-teal-300">
-                          <MessageSquare className="w-4 h-4" />
+                      <div className="flex items-center gap-3 text-left">
+                        <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-teal-300">
+                          <MessageSquare className="w-5 h-5" />
                         </div>
                         <div>
-                          <span className="font-black text-xs block">Abrir Chat con el Operador</span>
-                          <span className="text-[10px] text-teal-300 font-semibold">Fotos, notas de voz y mensajes</span>
+                          <span className="font-extrabold text-sm block">Chat con la Central 24/7</span>
+                          <span className="text-[11px] text-purple-200 font-medium">Fotos, notas de voz y mensajes en vivo</span>
                         </div>
                       </div>
                       <ChevronRight className="w-5 h-5 text-white/80" />
                     </button>
-
-                    {/* Recomendación de Seguridad */}
-                    <div className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-2.5 text-left flex items-center gap-2 mt-2 text-amber-900 text-[11px]">
-                      <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-                      <span>Enciende las luces intermitentes y mantente en un lugar seguro mientras llega la unidad.</span>
-                    </div>
                   </>
                 ) : liveEmergency?.status === 'resuelto' ? (
                   /* CASO RESUELTO */
@@ -647,11 +600,11 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
 
                 {/* Botón de Llamada Telefónica Directa */}
                 <a
-                  href="tel:0800372836"
+                  href="tel:02129010911"
                   className="w-full mt-3 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-[12px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all"
                 >
                   <Phone className="w-4 h-4 text-emerald-400" />
-                  <span>Llamar Central Directo (0800-ESCUDO)</span>
+                  <span>Llamar Central Directo (0212-9010911)</span>
                 </a>
 
                 {/* Botón Cerrar */}
