@@ -15,13 +15,13 @@ export default function DemoSplitPage() {
       {/* Barra de cabecera del modo demo (Respond.io style) */}
       <div className="bg-white border-b border-slate-200/90 px-4 py-2.5 flex items-center justify-between text-xs text-slate-700 shadow-2xs">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center p-1 shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-[#4B2C84] flex items-center justify-center p-1 shrink-0">
             <img src={escudoLogo} alt="Escudo Vial" className="w-full h-full object-contain" />
           </div>
-          <span className="font-black text-blue-600 tracking-tight text-sm">ESCUDO VIAL</span>
+          <span className="font-black text-[#4B2C84] tracking-tight text-sm">ESCUDO VIAL</span>
           <span className="text-slate-300">|</span>
           <span className="text-slate-800 font-semibold text-xs">Simulador Dual (Móvil Conductor + Torre de Control)</span>
-          <span className="hidden sm:inline-flex bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full text-[10px] border border-blue-100">
+          <span className="hidden sm:inline-flex bg-purple-50 text-[#4B2C84] font-bold px-2 py-0.5 rounded-full text-[10px] border border-purple-100">
             DEMO INTERACTIVA
           </span>
         </div>

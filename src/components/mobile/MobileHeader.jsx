@@ -10,7 +10,7 @@ export default function MobileHeader({ onOpenReportModal }) {
         {/* Logo & Marca Institucional */}
         <div className="flex items-center gap-2.5">
           <div 
-            className="w-10 h-10 rounded-xl overflow-hidden p-1 shadow-xs flex items-center justify-center shrink-0 bg-blue-600"
+            className="w-10 h-10 rounded-xl overflow-hidden p-1 shadow-xs flex items-center justify-center shrink-0 bg-[#4B2C84]"
           >
             <img src={escudoLogo} alt="Escudo Vial" className="w-full h-full object-contain" />
           </div>
@@ -53,10 +53,10 @@ export default function MobileHeader({ onOpenReportModal }) {
 
               <a
                 href="#ayuda"
-                onClick={(e) => { e.preventDefault(); setMenuOpen(false); alert('Central de Soporte Escudo Vial disponible 24/7 al 01-8000-911-000'); }}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:text-blue-600 hover:bg-blue-50 transition-colors text-[13px] font-medium group"
+                onClick={(e) => { e.preventDefault(); setMenuOpen(false); alert('Central de Soporte Escudo Vial disponible 24/7 al 0212-9010911'); }}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:text-[#4B2C84] hover:bg-purple-50 transition-colors text-[13px] font-medium group"
               >
-                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-[#4B2C84] group-hover:text-white transition-colors">
                   <span className="material-symbols-outlined text-[16px]">help</span>
                 </div>
                 <span>Ayuda</span>
@@ -64,10 +64,10 @@ export default function MobileHeader({ onOpenReportModal }) {
 
               <a
                 href="#faq"
-                onClick={(e) => { e.preventDefault(); setMenuOpen(false); alert('Preguntas frecuentes: El sticker QR es resistente a la intemperie y vincula tu póliza 24/7.'); }}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:text-blue-600 hover:bg-blue-50 transition-colors text-[13px] font-medium group"
+                onClick={(e) => { e.preventDefault(); setMenuOpen(false); alert('Preguntas frecuentes: El sticker QR es resistente a la intemperie y vincula tu cobertura 24/7.'); }}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:text-[#4B2C84] hover:bg-purple-50 transition-colors text-[13px] font-medium group"
               >
-                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-[#4B2C84] group-hover:text-white transition-colors">
                   <span className="material-symbols-outlined text-[16px]">quiz</span>
                 </div>
                 <span>Preguntas frecuentes</span>
@@ -75,10 +75,10 @@ export default function MobileHeader({ onOpenReportModal }) {
 
               <a
                 href="#terminos"
-                onClick={(e) => { e.preventDefault(); setMenuOpen(false); alert('Términos y condiciones: Servicio de auxilio vial sujeto a cobertura geográfica.'); }}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:text-blue-600 hover:bg-blue-50 transition-colors text-[13px] font-medium group"
+                onClick={(e) => { e.preventDefault(); setMenuOpen(false); alert('Términos y condiciones: Servicio de auxilio vial satelital Escudo Vial 24/7.'); }}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:text-[#4B2C84] hover:bg-purple-50 transition-colors text-[13px] font-medium group"
               >
-                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-[#4B2C84] group-hover:text-white transition-colors">
                   <span className="material-symbols-outlined text-[16px]">description</span>
                 </div>
                 <span>Términos y condiciones</span>
