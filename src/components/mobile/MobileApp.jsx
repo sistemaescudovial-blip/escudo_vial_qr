@@ -164,12 +164,9 @@ export default function MobileApp({ showSimulatorBar = false }) {
             /* ESTADO 2: STICKER ACTIVO / PROTEGIDO */
             <>
               {/* Badge superior: exclusivamente el identificador del sticker */}
-              <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-full border border-slate-200/90 text-xs text-slate-800 shadow-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-bold text-slate-900 tracking-wide text-[12px]">STICKER OFICIAL</span>
-                </div>
-                <span className="text-[12px] font-black text-[#4B2C84] bg-purple-50 px-3 py-0.5 rounded-full border border-purple-200/80 tracking-wider">
+              <div className="flex items-center justify-center gap-2 bg-white px-5 py-2 rounded-full border border-purple-100 shadow-xs mx-auto w-fit">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="text-[13px] font-black text-[#4B2C84] tracking-widest uppercase">
                   {cleanSku}
                 </span>
               </div>
