@@ -20,9 +20,9 @@ export default function SosHero({ onOpenSosModal, activeIncident: propActiveInci
         // Ignorar si el navegador bloquea la vibración
       }
     }
-    // Si ya hay alerta activa (Azul Eléctrico o Verde), abre directamente el seguimiento o chat
+    // Si ya hay alerta activa (Azul Eléctrico o Verde), abre directamente el estado del auxilio
     if (activeIncident) {
-      onOpenSosModal(isEnCamino ? 'auxilio' : 'chat');
+      onOpenSosModal('auxilio');
     } else {
       // Si está en reposo (Rojo), abre el prompt de titular o tercero
       onOpenSosModal('prompt');

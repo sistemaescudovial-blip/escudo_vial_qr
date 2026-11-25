@@ -171,11 +171,11 @@ export default function MobileApp({ showSimulatorBar = false }) {
                 </span>
               </div>
 
-              {/* Banner de Auxilio Activo en Tiempo Real - Al hacer clic abre directamente el chat con la central */}
+              {/* Banner de Auxilio Activo en Tiempo Real - Al hacer clic abre el estado del auxilio */}
               {activeIncident && (
                 <div 
                   onClick={() => {
-                    setSosModalMode('chat');
+                    setSosModalMode('auxilio');
                     setIsSosModalOpen(true);
                   }}
                   className="w-full bg-white border border-purple-200/90 p-3.5 rounded-2xl shadow-xs flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] group animate-in fade-in relative hover:border-[#4B2C84]/40"
