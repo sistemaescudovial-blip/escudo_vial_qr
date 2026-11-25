@@ -301,6 +301,7 @@ const CUT_CONTOURS_NORMALIZED = {
 /**
  * Registra una tinta directa (Spot Color / Volltonfarbe) llamada exactamente
  * /CutContour en modo CMYK (C:0, M:100, Y:0, K:0) dentro del catálogo /Resources del PDF.
+ * Se intercepta el cierre de /XObject para no romper la declaración de imágenes (addImage).
  */
 function registerCutContourSpotColor(doc) {
   let csObjId = null;
@@ -312,11 +313,32 @@ function registerCutContourSpotColor(doc) {
     doc.internal.write(`[/Separation /CutContour /DeviceCMYK ${fnObjId} 0 R]`);
     doc.internal.write('endobj');
   });
-  doc.internal.events.subscribe('putXobjectDict', () => {
-    if (csObjId) {
-      doc.internal.write(`>>\n/ColorSpace << /CS_CutContour ${csObjId} 0 R`);
+
+  let inXObject = false;
+  let colorSpaceInjected = false;
+  const originalWrite = doc.internal.write;
+
+  doc.internal.write = function (...args) {
+    const str = args.length === 1 ? String(args[0]) : args.map(String).join(' ');
+
+    if (str.includes('/XObject <<')) {
+      inXObject = true;
+      colorSpaceInjected = false;
+      return originalWrite.apply(this, args);
     }
-  });
+
+    if (inXObject && str.trim() === '>>' && !colorSpaceInjected) {
+      inXObject = false;
+      colorSpaceInjected = true;
+      originalWrite.apply(this, args);
+      if (csObjId) {
+        originalWrite.call(this, `/ColorSpace << /CS_CutContour ${csObjId} 0 R >>`);
+      }
+      return;
+    }
+
+    return originalWrite.apply(this, args);
+  };
 }
 
 /**
