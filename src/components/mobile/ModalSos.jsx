@@ -29,7 +29,7 @@ import {
   X
 } from 'lucide-react';
 
-export default function ModalSos({ isOpen, onClose }) {
+export default function ModalSos({ isOpen, onClose, initialMode = 'prompt' }) {
   const { 
     activeSku, 
     currentQr, 
@@ -69,7 +69,9 @@ export default function ModalSos({ isOpen, onClose }) {
     (existingActiveEmg && existingActiveEmg.status !== 'resuelto') ||
     (confirmedEmergency && confirmedEmergency.status !== 'resuelto')
   );
-  const showTrackingView = isConfirmed || hasActiveEmergency;
+  
+  // La vista de tracking/chat solo se muestra si ya fue confirmada en este flujo o se abrió expresamente como chat
+  const showTrackingView = isConfirmed;
 
   // Filtrar notas válidas y no vacías
   const validNotes = (liveEmergency?.notes || []).filter(
@@ -92,17 +94,21 @@ export default function ModalSos({ isOpen, onClose }) {
       setSelectedRole('titular');
       setIsSending(false);
 
-      if (hasActiveEmergency) {
+      if (initialMode === 'chat') {
         setIsConfirmed(true);
+        setActiveTab('chat');
         if (existingActiveEmg) {
           setConfirmedEmergency(existingActiveEmg);
         }
       } else {
+        // Al tocar el botón central S.O.S: SIEMPRE se muestra la selección de titular o tercero
         setIsConfirmed(false);
-        setConfirmedEmergency(null);
+        setActiveTab('auxilio');
+        if (existingActiveEmg) {
+          setConfirmedEmergency(existingActiveEmg);
+        }
       }
 
-      setActiveTab('auxilio');
       setChatMessage('');
       setIsRecording(false);
       setRecordingSeconds(0);
@@ -114,7 +120,7 @@ export default function ModalSos({ isOpen, onClose }) {
         })
         .catch(() => {});
     }
-  }, [isOpen, hasActiveEmergency]);
+  }, [isOpen, initialMode, existingActiveEmg]);
 
   if (!isOpen) return null;
 
@@ -318,17 +324,17 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                 disabled={isSending}
                 className={`w-full p-3.5 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer shadow-sm relative border-2 ${
                   selectedRole === 'titular'
-                    ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-100'
+                    ? 'border-[#4B2C84] bg-purple-50 ring-2 ring-purple-200/60'
                     : 'border-slate-200 bg-white hover:bg-slate-50'
                 }`}
               >
-                <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <div className="w-11 h-11 rounded-xl bg-[#4B2C84] text-white flex items-center justify-center shrink-0 shadow-xs">
                   <User className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="font-extrabold text-slate-900 text-[14px]">Soy el titular</span>
-                    <span className="bg-blue-50 text-slate-900 text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wider">
+                    <span className="bg-purple-100 text-[#4B2C84] text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wider">
                       Predeterminado
                     </span>
                   </div>
@@ -337,7 +343,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                   </div>
                 </div>
                 {selectedRole === 'titular' && (
-                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <div className="w-6 h-6 rounded-full bg-[#4B2C84] text-white flex items-center justify-center shrink-0 shadow-xs">
                     <Check className="w-4 h-4" />
                   </div>
                 )}
@@ -350,12 +356,12 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                 disabled={isSending}
                 className={`w-full p-3.5 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] cursor-pointer shadow-sm border-2 ${
                   selectedRole === 'tercero'
-                    ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-100'
-                    : 'border-slate-200 bg-white hover:bg-blue-50/50'
+                    ? 'border-[#4B2C84] bg-purple-50 ring-2 ring-purple-200/60'
+                    : 'border-slate-200 bg-white hover:bg-purple-50/50'
                 }`}
               >
-                <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <Users className="w-6 h-6 text-blue-600" />
+                <div className="w-11 h-11 rounded-xl bg-purple-100 text-[#4B2C84] flex items-center justify-center shrink-0">
+                  <Users className="w-6 h-6 text-[#4B2C84]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-slate-900 text-[14px]">Soy un tercero / testigo</div>
@@ -418,7 +424,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <Truck className="w-4 h-4 text-blue-600" />
+                  <Truck className="w-4 h-4 text-[#4B2C84]" />
                   <span>Estado del Auxilio</span>
                 </button>
 
@@ -427,7 +433,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                   onClick={() => setActiveTab('chat')}
                   className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer relative ${
                     activeTab === 'chat'
-                      ? 'bg-blue-600 text-white shadow-xs'
+                      ? 'bg-[#4B2C84] text-white shadow-xs'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
@@ -435,8 +441,14 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                   <span>Chat con Central</span>
                   {chatMessagesCount > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      activeTab === 'chat' ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white'
+                      activeTab === 'chat' ? 'bg-emerald-500 text-white' : 'bg-[#4B2C84] text-white'
                     }`}>
+                      {chatMessagesCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
                       {chatMessagesCount}
                     </span>
                   )}
@@ -653,7 +665,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
               <div className="w-full flex-1 flex flex-col justify-between overflow-hidden bg-slate-50/80 rounded-2xl border border-slate-200 text-left">
                 
                 {/* Cabecera del Chat */}
-                <div className="bg-blue-600 text-white px-3.5 py-2.5 flex items-center justify-between shadow-xs shrink-0">
+                <div className="bg-[#4B2C84] text-white px-3.5 py-2.5 flex items-center justify-between shadow-xs shrink-0">
                   <div className="flex items-center gap-2.5">
                     <button
                       type="button"
@@ -863,7 +875,7 @@ ${window.location.origin}/v/${activeSku || 'EV8842VE'}`;
                         onChange={(e) => setChatMessage(e.target.value)}
                         placeholder={isUploadingMedia ? "Comprimiendo archivo..." : "Escribe a la central..."}
                         disabled={isUploadingMedia}
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all"
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#4B2C84] focus:bg-white transition-all"
                       />
 
                       {/* Botón de Micrófono para Nota de Voz */}

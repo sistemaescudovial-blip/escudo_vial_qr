@@ -22,6 +22,7 @@ export default function MobileApp({ showSimulatorBar = false }) {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
+  const [sosModalMode, setSosModalMode] = useState('prompt');
   const [isTelemedicinaModalOpen, setIsTelemedicinaModalOpen] = useState(false);
   const [isSofiaModalOpen, setIsSofiaModalOpen] = useState(false);
   const [isAfiliacionModalOpen, setIsAfiliacionModalOpen] = useState(false);
@@ -162,35 +163,36 @@ export default function MobileApp({ showSimulatorBar = false }) {
           ) : (
             /* ESTADO 2: STICKER ACTIVO / PROTEGIDO */
             <>
-              {/* Badge superior compacto de sticker protegido */}
-              <div className="flex items-center justify-between bg-white px-4 py-2 rounded-full border border-slate-200/90 text-xs text-slate-800 shadow-xs">
+              {/* Badge superior: exclusivamente el identificador del sticker */}
+              <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-full border border-slate-200/90 text-xs text-slate-800 shadow-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-bold text-slate-800">Escudo Vial 24/7</span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-emerald-600 font-semibold text-[11px]">Protegido</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold text-slate-900 tracking-wide text-[12px]">STICKER OFICIAL</span>
                 </div>
-                <span className="text-[10px] text-slate-600 font-bold bg-slate-100 px-2.5 py-0.5 rounded-full shrink-0 ml-2 border border-slate-200">
+                <span className="text-[12px] font-black text-[#4B2C84] bg-purple-50 px-3 py-0.5 rounded-full border border-purple-200/80 tracking-wider">
                   {cleanSku}
                 </span>
               </div>
 
-              {/* Banner de Auxilio Activo en Tiempo Real */}
+              {/* Banner de Auxilio Activo en Tiempo Real - Al hacer clic abre directamente el chat con la central */}
               {activeIncident && (
                 <div 
-                  onClick={() => setIsSosModalOpen(true)}
-                  className="w-full bg-white border border-rose-200 p-3.5 rounded-2xl shadow-xs flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] group animate-in fade-in relative"
+                  onClick={() => {
+                    setSosModalMode('chat');
+                    setIsSosModalOpen(true);
+                  }}
+                  className="w-full bg-white border border-purple-200/90 p-3.5 rounded-2xl shadow-xs flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] group animate-in fade-in relative hover:border-[#4B2C84]/40"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs ${
                       activeIncident.status === 'en_camino' 
-                        ? 'bg-blue-600' 
-                        : 'bg-rose-600'
+                        ? 'bg-[#00A896]' 
+                        : 'bg-[#4B2C84]'
                     }`}>
                       {activeIncident.status === 'en_camino' ? (
                         <Truck className="w-5 h-5" />
                       ) : (
-                        <Radio className="w-5 h-5 animate-spin" style={{ animationDuration: '3s' }} />
+                        <MessageSquare className="w-5 h-5 animate-pulse" />
                       )}
                     </div>
                     <div className="text-left min-w-0">
@@ -198,7 +200,7 @@ export default function MobileApp({ showSimulatorBar = false }) {
                         <span className="font-bold text-slate-900 text-[13px] tracking-tight">
                           {activeIncident.status === 'en_camino' ? '¡Unidad en Camino!' : 'Alerta S.O.S Activa'}
                         </span>
-                        <span className="text-[10px] bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded-md whitespace-nowrap border border-slate-200">
+                        <span className="text-[10px] bg-purple-50 text-[#4B2C84] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap border border-purple-200">
                           {activeIncident.folio}
                         </span>
                       </div>
@@ -210,15 +212,19 @@ export default function MobileApp({ showSimulatorBar = false }) {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs shrink-0 ml-2">
-                    <span>Ver</span>
+                  <div className="flex items-center gap-1 bg-[#4B2C84] hover:bg-[#3d236b] text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs shrink-0 ml-2 transition-colors">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Chat</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
               )}
 
-              {/* Botón de Pánico Central S.O.S */}
-              <SosHero onOpenSosModal={() => setIsSosModalOpen(true)} />
+              {/* Botón de Pánico Central S.O.S - Al hacer clic siempre pregunta titular o tercero */}
+              <SosHero onOpenSosModal={() => {
+                setSosModalMode('prompt');
+                setIsSosModalOpen(true);
+              }} />
 
               {/* Tarjetas de Asistencia y QR */}
               <ActionCards 
@@ -235,7 +241,10 @@ export default function MobileApp({ showSimulatorBar = false }) {
       {isQrActive && (
         <BottomNav 
           onOpenAfiliacionModal={() => setIsAfiliacionModalOpen(true)}
-          onOpenSosModal={() => setIsSosModalOpen(true)}
+          onOpenSosModal={() => {
+            setSosModalMode('prompt');
+            setIsSosModalOpen(true);
+          }}
           onOpenSofiaModal={() => setIsSofiaModalOpen(true)}
         />
       )}
@@ -255,6 +264,7 @@ export default function MobileApp({ showSimulatorBar = false }) {
       <ModalSos 
         isOpen={isSosModalOpen} 
         onClose={() => setIsSosModalOpen(false)} 
+        initialMode={sosModalMode}
       />
 
       <ModalTelemedicina 

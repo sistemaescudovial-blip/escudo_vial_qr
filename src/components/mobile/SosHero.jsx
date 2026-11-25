@@ -53,18 +53,18 @@ export default function SosHero({ onOpenSosModal }) {
     };
   } else if (isActive) {
     config = {
-      gradient: 'radial-gradient(circle at 45% 25%, rgb(96, 165, 250) 0%, rgb(59, 130, 246) 42%, rgb(37, 99, 235) 78%, rgb(29, 78, 216) 100%)',
-      shadowColor: '#1e3a8a',
-      glowColor: 'rgba(37, 99, 235, 0.45)',
-      radarColor1: 'bg-blue-500/25',
-      radarColor2: 'bg-blue-500/15',
-      radarColor3: 'bg-blue-600/10',
-      coronaStroke: '#3B82F6',
+      gradient: 'radial-gradient(circle at 45% 25%, rgb(126, 87, 194) 0%, rgb(75, 44, 132) 42%, rgb(56, 30, 105) 78%, rgb(38, 17, 74) 100%)',
+      shadowColor: '#26114a',
+      glowColor: 'rgba(75, 44, 132, 0.45)',
+      radarColor1: 'bg-[#4B2C84]/25',
+      radarColor2: 'bg-[#4B2C84]/15',
+      radarColor3: 'bg-[#4B2C84]/10',
+      coronaStroke: '#4B2C84',
       icon: 'sensors',
       title: 'S.O.S ACTIVO',
       subtitle: 'TRANSMITIENDO EN VIVO',
       heading: 'ALERTA EN PROCESO DE ATENCIÓN',
-      headingClass: 'text-blue-700',
+      headingClass: 'text-[#4B2C84]',
       description: `Folio ${activeIncident.folio || 'S.O.S'}: Torre de control coordinando respuesta inmediata en tus coordenadas.`,
     };
   }
