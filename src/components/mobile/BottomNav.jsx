@@ -20,10 +20,9 @@ export default function BottomNav({
           <span className="text-[11px] font-semibold tracking-tight">Afiliación</span>
         </button>
 
-        {/* Tab 2: S.O.S Central Flotante */}
-        <button
-          type="button"
-          onClick={onOpenSosModal}
+        {/* Tab 2: S.O.S Central Flotante - Llamada directa */}
+        <a
+          href="tel:02129010911"
           className="flex flex-col items-center justify-center gap-1 min-w-[76px] -mt-7 active:scale-95 transition-all cursor-pointer group"
         >
           <div className="w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-tr from-rose-600 to-red-500 text-white shadow-md shadow-rose-500/30 border-4 border-white group-hover:scale-105 transition-transform">
@@ -34,12 +33,13 @@ export default function BottomNav({
           <span className="text-[11px] font-bold tracking-tight text-rose-600 mt-0.5">
             S.O.S
           </span>
-        </button>
+        </a>
 
-        {/* Tab 3: Sofía IA */}
-        <button
-          type="button"
-          onClick={onOpenSofiaModal}
+        {/* Tab 3: Sofía IA - WhatsApp directo */}
+        <a
+          href="https://wa.me/584220420773"
+          target="_blank"
+          rel="noopener noreferrer"
           className="flex flex-col items-center justify-center gap-1 min-w-[76px] py-1 text-slate-500 hover:text-emerald-600 active:scale-95 transition-all cursor-pointer"
         >
           <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 border border-emerald-100">
@@ -48,7 +48,7 @@ export default function BottomNav({
             </svg>
           </div>
           <span className="text-[11px] font-semibold tracking-tight">Sofía IA</span>
-        </button>
+        </a>
       </div>
     </nav>
   );

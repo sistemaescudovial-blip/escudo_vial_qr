@@ -162,15 +162,15 @@ export default function MobileApp({ showSimulatorBar = false }) {
           ) : (
             /* ESTADO 2: STICKER ACTIVO / PROTEGIDO */
             <>
-              {/* Badge superior compacto de vehículo protegido */}
+              {/* Badge superior compacto de sticker protegido */}
               <div className="flex items-center justify-between bg-white px-4 py-2 rounded-full border border-slate-200/90 text-xs text-slate-800 shadow-xs">
-                <div className="flex items-center gap-1.5 truncate">
-                  
-                  <span className="font-semibold truncate text-slate-800">{currentQr.holder.vehicle}</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold text-slate-800">Escudo Vial 24/7</span>
                   <span className="text-slate-300">•</span>
-                  <span className="text-blue-600 font-bold">{currentQr.holder.plate}</span>
+                  <span className="text-emerald-600 font-semibold text-[11px]">Protegido</span>
                 </div>
-                <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-full shrink-0 ml-2 border border-slate-200">
+                <span className="text-[10px] text-slate-600 font-bold bg-slate-100 px-2.5 py-0.5 rounded-full shrink-0 ml-2 border border-slate-200">
                   {cleanSku}
                 </span>
               </div>
