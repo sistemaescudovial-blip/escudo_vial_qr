@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { INITIAL_QRS, INITIAL_EMERGENCIES, INITIAL_REPORTS } from '../data/mockData';
 import { getDeviceLocation } from '../utils/geoUtils';
+import { sendTelegramSosAlert } from '../utils/telegramAlert';
 import {
   supabase,
   isSupabaseConfigured,
@@ -609,6 +610,7 @@ export function AppProvider({ children }) {
       }
 
       syncServer('REITERATE_EMERGENCY', updatedEmergency);
+      sendTelegramSosAlert(updatedEmergency, true);
       return updatedEmergency;
     }
 
@@ -651,6 +653,7 @@ export function AppProvider({ children }) {
     }
 
     syncServer('NEW_EMERGENCY', newEmergency);
+    sendTelegramSosAlert(newEmergency, false);
 
     setQrList(prev => prev.map(q => {
       if (q?.sku && q.sku.toUpperCase() === targetSku) {

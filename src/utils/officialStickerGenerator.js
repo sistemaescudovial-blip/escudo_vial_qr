@@ -304,6 +304,8 @@ const CUT_CONTOURS_NORMALIZED = {
  */
 function registerCutContourSpotColor(doc) {
   let csObjId = null;
+  let colorSpaceInjected = false;
+
   doc.internal.events.subscribe('putResources', () => {
     const fnObjId = doc.internal.newObject();
     doc.internal.write('<< /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [0 1 0 0] /N 1 >>');
@@ -313,14 +315,23 @@ function registerCutContourSpotColor(doc) {
     doc.internal.write('endobj');
   });
 
-  const originalWrite = doc.internal.write;
-  let colorSpaceInjected = false;
+  doc.internal.events.subscribe('putResourceDictionary', () => {
+    if (csObjId && !colorSpaceInjected) {
+      colorSpaceInjected = true;
+      doc.internal.write(`/ColorSpace << /CS_CutContour ${csObjId} 0 R >>`);
+    }
+  });
 
+  const originalWrite = doc.internal.write;
   doc.internal.write = function (...args) {
     const str = args.length === 1 ? String(args[0]) : args.map(String).join(' ');
     originalWrite.apply(this, args);
 
-    if (csObjId && !colorSpaceInjected && (str.includes('/Resources <<') || str.includes('/Resources\n<<'))) {
+    if (csObjId && !colorSpaceInjected && (
+      str.includes('/ProcSet') ||
+      str.includes('/Resources <<') ||
+      str.includes('/Resources\n<<')
+    )) {
       colorSpaceInjected = true;
       originalWrite.call(this, `/ColorSpace << /CS_CutContour ${csObjId} 0 R >>`);
     }
@@ -597,12 +608,12 @@ export async function exportCanvasRollPdf(qrs, getBaseUrl, canvasConfig = {}, pr
   doc.rect(0, 0, canvasWidthMm, canvasHeightMm, 'F');
 
   const artworkConfig = { ...printConfig, cutExternal: false, cutInternal: false, cmykMode: true };
-  const parser = new DOMParser();
+  const canvas = document.createElement('canvas');
+  let cachedImgData = null;
 
-  let cachedSvgElement = null;
   if (isNoQr) {
-    const blankSvg = generateOfficialStickerSvg('BASE', getBaseUrl(), artworkConfig);
-    cachedSvgElement = parser.parseFromString(blankSvg, 'image/svg+xml').documentElement;
+    await renderOfficialStickerToCanvas('BASE', getBaseUrl(), canvas, artworkConfig);
+    cachedImgData = canvas.toDataURL('image/png');
   }
 
   for (let i = 0; i < totalStickers; i++) {
@@ -612,22 +623,18 @@ export async function exportCanvasRollPdf(qrs, getBaseUrl, canvasConfig = {}, pr
     const xMm = offsetX + col * (stickerWidth + gapXMm);
     const yMm = marginMm + row * (stickerHeight + gapYMm);
 
-    let svgEl = cachedSvgElement;
+    let imgData = cachedImgData;
     if (!isNoQr) {
       const q = qrs[i] || qrs[i % qrs.length] || { sku: `EV${String(1000 + i).slice(-4)}VE` };
       const cleanSku = (q.sku || 'EV3362VE').replace(/[#-]/g, '').toUpperCase();
       const targetUrl = `${getBaseUrl()}/v/${cleanSku}`;
-      const stickerSvg = generateOfficialStickerSvg(cleanSku, targetUrl, artworkConfig);
-      svgEl = parser.parseFromString(stickerSvg, 'image/svg+xml').documentElement;
+      await renderOfficialStickerToCanvas(cleanSku, targetUrl, canvas, artworkConfig);
+      imgData = canvas.toDataURL('image/png');
     }
 
-    // Dibujar sticker 100% vectorial nativo directamente en PDF (cero rasterización)
-    await svg2pdf(svgEl, doc, {
-      x: xMm,
-      y: yMm,
-      width: stickerWidth,
-      height: stickerHeight
-    });
+    if (imgData) {
+      doc.addImage(imgData, 'PNG', xMm, yMm, stickerWidth, stickerHeight, undefined, 'FAST');
+    }
 
     // Trazos vectoriales de corte con tinta directa CutContour (solo si están activos en printConfig)
     drawCutContoursToPdf(doc, xMm, yMm, stickerWidth, stickerHeight, printConfig);
