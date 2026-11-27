@@ -1,118 +1,103 @@
-const TELEGRAM_BOT_TOKEN = '9140137525:AAGfciv2x4qNOEs8XwTXXil0y3syIC9UMyM';
-const TELEGRAM_CHAT_ID = '-5350347338';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://whsawcpdxkjvxteekics.supabase.co';
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_NMBhODhYGcSbSAYaerN-CA_LpEmck89';
 
-const MIN_AGE_MS = 45 * 1000;      // Esperar al menos 45s tras la alerta inicial
-const REMINDER_INTERVAL_MS = 50 * 1000; // Mínimo 50s entre recordatorios
-const MAX_AGE_MS = 30 * 60 * 1000; // Tope de seguridad: 30 minutos
-
-function escapeHtml(text) {
-  return String(text || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+const MIN_AGE_MS = 45 * 1000;
+const REMINDER_INTERVAL_MS = 50 * 1000;
+const MAX_AGE_MS = 30 * 60 * 1000;
 
 export default async function handler(req, res) {
   try {
-    const queryUrl = `${SUPABASE_URL}/rest/v1/emergencies?status=eq.critico&select=*`;
-    const dbRes = await fetch(queryUrl, {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const [emgRes, tokensRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/emergencies?status=eq.critico&select=*&order=created_at.desc`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/operator_push_tokens?select=token`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      })
+    ]);
 
-    if (!dbRes.ok) {
-      const errText = await dbRes.text();
-      return res.status(500).json({ ok: false, error: 'Supabase query failed', details: errText });
+    if (!emgRes.ok) {
+      return res.status(500).json({ ok: false, error: 'Supabase emergencies query failed' });
     }
 
-    const emergencies = await dbRes.json();
+    const emergencies = await emgRes.json();
+    const tokenRows = tokensRes.ok ? await tokensRes.json() : [];
+    const tokens = tokenRows.map((r) => r.token).filter(Boolean);
+
     const now = Date.now();
-    let reminded = 0;
-
-    for (const emg of emergencies) {
-      const loc = emg.location && typeof emg.location === 'object' ? emg.location : {};
-      if (loc.telegramSilenced === true) continue;
-
+    const pending = emergencies.filter((emg) => {
       const createdAtMs = emg.created_at ? new Date(emg.created_at).getTime() : now;
       const ageMs = now - createdAtMs;
+      return ageMs >= MIN_AGE_MS && ageMs <= MAX_AGE_MS;
+    });
 
-      if (ageMs < MIN_AGE_MS || ageMs > MAX_AGE_MS) continue;
+    if (pending.length === 0 || tokens.length === 0) {
+      return res.status(200).json({
+        ok: true,
+        checked: emergencies.length,
+        pending: pending.length,
+        devices: tokens.length,
+        reminded: 0
+      });
+    }
 
-      const lastRemindedAt = Number(loc.lastTelegramReminderAt || 0);
-      if (lastRemindedAt && (now - lastRemindedAt) < REMINDER_INTERVAL_MS) continue;
+    const recentlyReminded = pending.some((emg) => {
+      const last = Number(emg.location?.lastPushReminderAt || 0);
+      return last && (now - last) < REMINDER_INTERVAL_MS;
+    });
 
-      const minutesAgo = Math.max(1, Math.round(ageMs / 60000));
-      const nextCount = Number(loc.reminderCount || 0) + 1;
+    if (recentlyReminded) {
+      return res.status(200).json({ ok: true, skipped: 'already_reminded_recently' });
+    }
 
-      const lat = loc.lat || 10.4880;
-      const lng = loc.lng || -66.8792;
-      const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-      const adminUrl = 'https://escudo-vial-qr.vercel.app/admin';
+    const title = pending.length === 1
+      ? `🔔 S.O.S SIN ATENDER ${pending[0].folio} — ${pending[0].holder_name}`
+      : `🔔 ${pending.length} ALERTAS S.O.S SIN ATENDER`;
 
-      const lines = [
-        `🔔 <b>RECORDATORIO #${nextCount} — S.O.S SIN ATENDER</b>`,
-        `⏱️ <i>Lleva ${minutesAgo} min esperando atención</i>`,
-        '',
-        `🆔 <b>Folio:</b> <code>${escapeHtml(emg.folio)}</code>`,
-        `🏷️ <b>Sticker:</b> <code>${escapeHtml(emg.sku)}</code>`,
-        `👤 <b>Titular:</b> ${escapeHtml(emg.holder_name)} (${escapeHtml(emg.cedula)})`,
-        `🚗 <b>Vehículo:</b> ${escapeHtml(emg.vehicle)}`,
-        `📞 <b>Teléfono:</b> ${escapeHtml(emg.phone)}`,
-        `📍 <b>Ubicación:</b> ${escapeHtml(loc.address || 'Ubicación GPS en vivo')}`
-      ];
+    const body = pending.length === 1
+      ? `${pending[0].sku} • ${pending[0].location?.address || 'Toca para abrir Central'}`
+      : pending.slice(0, 3).map((e) => `${e.folio} (${e.sku})`).join(' | ');
 
-      const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+    const messages = tokens.map((to) => ({
+      to,
+      title,
+      body,
+      sound: 'siren.wav',
+      channelId: 'sos-emergency-v2',
+      priority: 'high'
+    }));
+
+    await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(messages)
+    });
+
+    for (const emg of pending) {
+      const loc = emg.location && typeof emg.location === 'object' ? emg.location : {};
+      await fetch(`${SUPABASE_URL}/rest/v1/emergencies?id=eq.${encodeURIComponent(emg.id)}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
         body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: lines.join('\n'),
-          parse_mode: 'HTML',
-          disable_web_page_preview: true,
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: '📍 Ver en Google Maps', url: mapsUrl },
-                { text: '🖥️ Abrir Central', url: adminUrl }
-              ],
-              [
-                { text: '✅ Atender / Silenciar', callback_data: `ack:${emg.id}` }
-              ]
-            ]
-          }
+          location: { ...loc, lastPushReminderAt: now }
         })
       });
-
-      if (tgRes.ok) {
-        reminded++;
-        const updatedLocation = {
-          ...loc,
-          lastTelegramReminderAt: now,
-          reminderCount: nextCount
-        };
-        await fetch(`${SUPABASE_URL}/rest/v1/emergencies?id=eq.${encodeURIComponent(emg.id)}`, {
-          method: 'PATCH',
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json',
-            Prefer: 'return=minimal'
-          },
-          body: JSON.stringify({ location: updatedLocation })
-        });
-      }
     }
 
     return res.status(200).json({
       ok: true,
       checked: emergencies.length,
-      reminded,
-      timestamp: new Date(now).toISOString()
+      pending: pending.length,
+      remindedDevices: tokens.length
     });
   } catch (err) {
     return res.status(500).json({ ok: false, error: err.message });

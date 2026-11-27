@@ -2,6 +2,27 @@ const TELEGRAM_BOT_TOKEN = '9140137525:AAGfciv2x4qNOEs8XwTXXil0y3syIC9UMyM';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://whsawcpdxkjvxteekics.supabase.co';
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_NMBhODhYGcSbSAYaerN-CA_LpEmck89';
 
+async function silenceEmergency(row, operatorName) {
+  const currentLoc = row.location && typeof row.location === 'object' ? row.location : {};
+  const updatedLocation = {
+    ...currentLoc,
+    telegramSilenced: true,
+    silencedBy: operatorName,
+    silencedAt: new Date().toISOString()
+  };
+
+  await fetch(`${SUPABASE_URL}/rest/v1/emergencies?id=eq.${encodeURIComponent(row.id)}`, {
+    method: 'PATCH',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal'
+    },
+    body: JSON.stringify({ location: updatedLocation })
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(200).json({ ok: true, message: 'Escudo Vial Telegram Webhook ready' });
@@ -16,49 +37,47 @@ export default async function handler(req, res) {
     }
 
     const data = String(callback.data);
-    if (!data.startsWith('ack:')) {
-      return res.status(200).json({ ok: true });
-    }
-
-    const emergencyId = data.slice(4);
     const operatorName = [callback.from?.first_name, callback.from?.last_name]
       .filter(Boolean)
       .join(' ') || callback.from?.username || 'Operador';
 
-    // Obtener emergencia actual para preservar su objeto location
-    const getRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/emergencies?id=eq.${encodeURIComponent(emergencyId)}&select=id,folio,location`,
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`
-        }
-      }
-    );
-
-    if (getRes.ok) {
-      const rows = await getRes.json();
-      const row = rows[0];
-      if (row) {
-        const currentLoc = row.location && typeof row.location === 'object' ? row.location : {};
-        const updatedLocation = {
-          ...currentLoc,
-          telegramSilenced: true,
-          silencedBy: operatorName,
-          silencedAt: new Date().toISOString()
-        };
-
-        await fetch(`${SUPABASE_URL}/rest/v1/emergencies?id=eq.${encodeURIComponent(emergencyId)}`, {
-          method: 'PATCH',
+    if (data === 'ack_all') {
+      const getRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/emergencies?status=eq.critico&select=id,location`,
+        {
           headers: {
             apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json',
-            Prefer: 'return=minimal'
-          },
-          body: JSON.stringify({ location: updatedLocation })
-        });
+            Authorization: `Bearer ${SUPABASE_KEY}`
+          }
+        }
+      );
+
+      if (getRes.ok) {
+        const rows = await getRes.json();
+        for (const row of rows) {
+          await silenceEmergency(row, operatorName);
+        }
       }
+    } else if (data.startsWith('ack:')) {
+      const emergencyId = data.slice(4);
+      const getRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/emergencies?id=eq.${encodeURIComponent(emergencyId)}&select=id,folio,location`,
+        {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
+          }
+        }
+      );
+
+      if (getRes.ok) {
+        const rows = await getRes.json();
+        if (rows[0]) {
+          await silenceEmergency(rows[0], operatorName);
+        }
+      }
+    } else {
+      return res.status(200).json({ ok: true });
     }
 
     // Responder a Telegram para quitar el relojito del botón
@@ -67,7 +86,7 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         callback_query_id: callback.id,
-        text: `✅ Alerta silenciada por ${operatorName}. Recuerda despachar en el Panel.`
+        text: `✅ Alerta silenciada por ${operatorName}.`
       })
     });
 
