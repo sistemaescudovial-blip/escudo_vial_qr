@@ -52,6 +52,9 @@ export async function sendTelegramSosAlert(emergency, isReiterated = false) {
           [
             { text: '📍 Ver en Google Maps', url: mapsUrl },
             { text: '🖥️ Abrir Central', url: adminUrl }
+          ],
+          [
+            { text: '✅ Atender / Silenciar', callback_data: `ack:${emergency.id}` }
           ]
         ]
       }
